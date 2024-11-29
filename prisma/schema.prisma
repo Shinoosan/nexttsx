@@ -1,0 +1,45 @@
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Stats {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @unique
+  cardsProcessed Int     @default(0)
+  createdAt     DateTime @default(now())
+  lastUpdated   DateTime @updatedAt
+}
+
+model User {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId    String   @unique
+  username      String?
+  firstName     String?
+  lastName      String?
+  cardsProcessed Int     @default(0)
+  createdAt     DateTime @default(now())
+  lastActive    DateTime @default(now())
+}
+
+model WebAppUser {
+  id                      String   @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId             String   @unique  // Added for Telegram user identification
+  isBot                   Boolean  @default(false)
+  firstName               String
+  lastName                String?
+  username                String?
+  languageCode           String?
+  isPremium              Boolean  @default(false)
+  addedToAttachmentMenu  Boolean  @default(false)
+  allowsWriteToPm        Boolean  @default(false)
+  photoUrl               String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("web_app_users")
+}
