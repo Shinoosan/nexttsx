@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { Prisma, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { Prisma, PrismaClientKnownRequestError } from '@prisma/client';
 
 // Define validation schema
 const StatsUpdateSchema = z.object({
