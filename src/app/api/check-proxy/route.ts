@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
-import AbortController from 'abort-controller';
+import { AbortController } from 'node:abort-controller';
+
+interface IpifyResponse {
+  ip: string;
+}
 
 export async function POST(request: Request) {
   try {
@@ -23,7 +27,7 @@ export async function POST(request: Request) {
     clearTimeout(timeout);
 
     const isLive = response.ok;
-    const data = await response.json();
+    const data: IpifyResponse = await response.json();
 
     return NextResponse.json({ isLive, ip: data.ip });
   } catch (error) {
