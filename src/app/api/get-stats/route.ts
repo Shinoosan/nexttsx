@@ -1,4 +1,3 @@
-// src/app/api/get-stats/route.ts
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 
@@ -19,7 +18,7 @@ export async function GET(req: Request) {
 
     // Fetch user-specific stats
     const userStats = await prisma.user.findUnique({
-      where: { userId },
+      where: { id: userId }, // Assuming 'id' is the unique identifier for the User model
       select: {
         cardsProcessed: true,
         username: true,
