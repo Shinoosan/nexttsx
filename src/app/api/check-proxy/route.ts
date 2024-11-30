@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
-import AbortController from 'abort-controller';
+import { AbortController } from 'node:abort-controller';
 
 export async function POST(request: Request) {
   try {
