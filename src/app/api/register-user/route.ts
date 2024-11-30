@@ -1,30 +1,29 @@
 // src/app/api/register-user/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
     const { userId, username } = await req.json();
-    const { db } = await connectToDatabase();
     
-    await db.collection('users').updateOne(
-      { userId },
-      { 
-        $set: { 
-          userId,
-          username,
-          lastSeen: new Date(),
-          updatedAt: new Date()
-        },
-        $setOnInsert: { 
-          createdAt: new Date(),
-          cardsProcessed: 0
-        }
+    const user = await prisma.user.upsert({
+      where: { userId },
+      update: {
+        username,
+        lastSeen: new Date(),
+        updatedAt: new Date(),
       },
-      { upsert: true }
-    );
+      create: {
+        userId,
+        username,
+        lastSeen: new Date(),
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        cardsProcessed: 0,
+      },
+    });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, user });
   } catch (error) {
     console.error('Error registering user:', error);
     return NextResponse.json(
