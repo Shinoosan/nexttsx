@@ -16,13 +16,10 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
-import type { WebApp } from '@/types/telegram-webapp-types';
-
-export type ViewType = 'home' | 'profile' | 'settings';
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState<ViewType>('home');
-  const [telegramUserId, setTelegramUserId] = useState<string>('');
+  const [currentView, setCurrentView] = useState('home');
+  const [telegramUserId, setTelegramUserId] = useState('');
   const [processedCount, setProcessedCount] = useState(0);
   const { proxy } = useProxy();
 
@@ -71,7 +68,7 @@ export default function Page() {
                 key={`${view}-button`}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setCurrentView(view as ViewType)}
+                onClick={() => setCurrentView(view)}
                 className={`p-2 rounded-lg transition-colors ${
                   currentView === view 
                     ? 'text-primary' 
