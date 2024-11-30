@@ -8,7 +8,6 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-import { GetServerSidePropsContext } from 'next';
 
 const checkProxy = async (proxy: string) => {
   try {
@@ -26,12 +25,8 @@ const checkProxy = async (proxy: string) => {
   }
 };
 
-interface SettingsPageProps {
-  telegramUserId: string | null;
-}
-
-export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
-  const { proxy, saveProxy } = useProxy(telegramUserId || '');
+export default function SettingsPage() {
+  const { proxy, saveProxy } = useProxy('');
   const [proxyInput, setProxyInput] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
@@ -155,13 +150,3 @@ export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
     </div>
   );
 }
-
-export const getServerSideProps = async (context: GetServerSidePropsContext) => {
-  const telegramUserId = process.env.TELEGRAM_USER_ID || null;
-
-  return {
-    props: {
-      telegramUserId,
-    },
-  };
-};
