@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ThemeToggle } from "@/components/theme-switcher";
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
+import { ThemeToggle } from '@/components/theme-switcher';
 import { useProxy } from '@/hooks/use-proxy';
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
+import { GetServerSidePropsContext } from 'next';
 
 const checkProxy = async (proxy: string) => {
   try {
@@ -26,11 +27,11 @@ const checkProxy = async (proxy: string) => {
 };
 
 interface SettingsPageProps {
-  telegramUserId: string;
+  telegramUserId: string | null;
 }
 
 export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
-  const { proxy, saveProxy } = useProxy(telegramUserId);
+  const { proxy, saveProxy } = useProxy(telegramUserId || '');
   const [proxyInput, setProxyInput] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
@@ -49,21 +50,21 @@ export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
       if (isLive) {
         await saveProxy(proxyInput);
         toast({
-          title: "Success",
-          description: "Proxy is live and has been saved",
+          title: 'Success',
+          description: 'Proxy is live and has been saved',
         });
       } else {
         toast({
-          title: "Error",
-          description: "Proxy is not working",
-          variant: "destructive",
+          title: 'Error',
+          description: 'Proxy is not working',
+          variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Failed to check proxy",
-        variant: "destructive",
+        title: 'Error',
+        description: 'Failed to check proxy',
+        variant: 'destructive',
       });
     } finally {
       setIsChecking(false);
@@ -98,7 +99,7 @@ export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
                 disabled={isChecking || !proxyInput}
                 className="flex-1"
               >
-                {isChecking ? "Checking..." : "Check & Save Proxy"}
+                {isChecking ? 'Checking...' : 'Check & Save Proxy'}
               </Button>
 
               {proxy && (
@@ -126,23 +127,23 @@ export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
 
       <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
         <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
-          <Link 
+          <Link
             href="/"
             className="flex flex-col items-center justify-center flex-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <Home size={24} />
             <span className="text-xs">Home</span>
           </Link>
-          
-          <Link 
+
+          <Link
             href="/profile"
             className="flex flex-col items-center justify-center flex-1 text-muted-foreground hover:text-foreground transition-colors"
           >
             <User size={24} />
             <span className="text-xs">Profile</span>
           </Link>
-          
-          <Link 
+
+          <Link
             href="/settings"
             className="flex flex-col items-center justify-center flex-1 text-foreground transition-colors"
           >
@@ -154,3 +155,13 @@ export default function SettingsPage({ telegramUserId }: SettingsPageProps) {
     </div>
   );
 }
+
+export const getServerSideProps = async (context: GetServerSidePropsContext) => {
+  const telegramUserId = process.env.TELEGRAM_USER_ID || null;
+
+  return {
+    props: {
+      telegramUserId,
+    },
+  };
+};
