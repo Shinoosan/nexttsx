@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { HttpsProxyAgent } from 'https-proxy-agent';
 import fetch from 'node-fetch';
-import { AbortController } from 'node:abort-controller';
+import AbortController from 'abort-controller';
 
 interface IpifyResponse {
   ip: string;
