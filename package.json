@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -46,10 +46,12 @@
     "tailwind-merge": "^2.5.5",
     "tailwindcss-radix": "^2.8.0",
     "zod": "^3.22.4",
-    "zustand": "^5.0.1",
-    "@next/polyfill-module": "latest"
-  },
+    "zustand": "^5.0.1"
+    },
   "devDependencies": {
+    "next": "14.0.4",  // Let's use a more stable version
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
