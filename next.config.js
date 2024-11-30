@@ -1,21 +1,25 @@
-module.exports = {
-  webpack: (config, options) => {
-    config.module.rules.push({
-      test: /\.m?js$/,
-      use: {
-        loader: 'next-nodejs-polyfill-loader',
-        options: {
-          modules: ['timers/promises'],
-        },
-      },
-      exclude: /node_modules\/mongodb/,
-    });
-
-    config.module.rules.push({
-      test: /node_modules\/mongodb/,
-      use: 'null-loader',
-    });
+/** @type {import('next').NextConfig} */
+const nextConfig = {
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      // Client-side fallbacks
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        dns: false,
+        child_process: false,
+        timers: false,
+        mongodb: false
+      }
+    }
 
     return config;
   },
+  experimental: {
+    serverComponentsExternalPackages: ['mongodb']
+  }
 };
+
+module.exports = nextConfig;
