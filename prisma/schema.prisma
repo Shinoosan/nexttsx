@@ -13,82 +13,84 @@ model User {
   username              String?
   firstName             String
   lastName              String?
-  photoUrl             String?
-  languageCode         String?   @default("en")
-  isPremium            Boolean   @default(false)
-  isBot                Boolean   @default(false)
-  allowsWriteToPm      Boolean   @default(false)
+  photoUrl              String?
+  languageCode          String?   @default("en")
+  isPremium             Boolean   @default(false)
+  isBot                 Boolean   @default(false)
+  allowsWriteToPm       Boolean   @default(false)
   
   // Stats
-  cardsProcessed       Int       @default(0)
-  liveCards           Int       @default(0)
-  deadCards           Int       @default(0)
+  cardsProcessed        Int       @default(0)
+  liveCards             Int       @default(0)
+  deadCards             Int       @default(0)
   
   // Settings
-  settings            Settings?
+  settings              Settings?
   
   // Timestamps
-  createdAt           DateTime   @default(now())
-  lastActive          DateTime   @updatedAt
+  createdAt             DateTime  @default(now())
+  lastLoginAt           DateTime  @updatedAt
   
   // Relations
-  processedCards      ProcessedCard[]
+  processedCards        ProcessedCard[]
 
   @@map("users")
 }
 
 model Settings {
-  id                String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId            String    @unique @db.ObjectId
-  user              User      @relation(fields: [userId], references: [id])
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @unique @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id])
   
   // Preferences
-  theme             String    @default("light")
-  language          String    @default("en")
-  notifications     Boolean   @default(true)
-  autoProcess       Boolean   @default(false)
-  defaultGate       String    @default("stripe")
+  theme                 String    @default("light")
+  language              String    @default("en")
+  notifications         Boolean   @default(true)
+  autoProcess           Boolean   @default(false)
+  defaultGate           String    @default("stripe")
   
   // Timestamps
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@map("settings")
 }
 
 model ProcessedCard {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String    @db.ObjectId
-  user            User      @relation(fields: [userId], references: [id])
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @db.ObjectId
+  user                  User      @relation(fields: [userId], references: [id])
   
   // Card Details
-  cardNumber      String
-  status          String    @default("pending") // pending, live, dead
-  gate            String
-  response        String?
+  cardNumber            String
+  status                String    @default("pending") // pending, live, dead
+  gate                  String
+  response              String?
   
   // Timestamps
-  processedAt     DateTime  @default(now())
+  processedAt           DateTime  @default(now())
 
   @@index([userId, status])
   @@map("processed_cards")
 }
+
 model Proxy {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  proxy     String    @unique
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  proxy                 String    @unique
+  isActive              Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@map("proxies")
 }
+
 // Optional: Add this if you want to track API usage
 model ApiUsage {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  userId          String    @unique @db.ObjectId
-  dailyRequests   Int       @default(0)
-  monthlyRequests Int       @default(0)
-  lastReset       DateTime  @default(now())
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String    @unique @db.ObjectId
+  dailyRequests         Int       @default(0)
+  monthlyRequests       Int       @default(0)
+  lastReset             DateTime  @default(now())
 
   @@map("api_usage")
 }
