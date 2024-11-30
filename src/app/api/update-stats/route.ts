@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { z } from 'zod'; // Add zod for validation
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
+import { z } from 'zod';
+import { Prisma, PrismaClientKnownRequestError } from '@prisma/client/runtime/library';
 
 // Define validation schema
 const StatsUpdateSchema = z.object({
@@ -30,28 +30,46 @@ export async function POST(request: Request) {
     const { userId, processedCount } = validatedData.data;
 
     // Add transaction to ensure data consistency
-    const updatedUser = await prisma.$transaction(async (tx) => {
+    const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.upsert({
         where: { 
           telegramId: userId.toString() 
         },
         update: {
           cardsProcessed: { increment: processedCount },
-          lastActive: new Date(),
+          lastLoginAt: new Date(),
         },
         create: {
           telegramId: userId.toString(),
           cardsProcessed: processedCount,
-          lastActive: new Date(),
+          lastLoginAt: new Date(),
         },
         select: {
           telegramId: true,
           cardsProcessed: true,
-          lastActive: true,
+          lastLoginAt: true,
         }
       });
 
-      return user;
+      // Update global stats
+      const globalStats = await tx.globalStats.upsert({
+        where: { id: 'global' },
+        update: {
+          totalCardsProcessed: { increment: processedCount },
+          updatedAt: new Date(),
+        },
+        create: {
+          id: 'global',
+          totalCardsProcessed: processedCount,
+          updatedAt: new Date(),
+        },
+        select: {
+          totalCardsProcessed: true,
+          updatedAt: true,
+        }
+      });
+
+      return { user, globalStats };
     });
 
     return NextResponse.json({ 
