@@ -1,3 +1,4 @@
+/// <reference path="../types/telegram-webapp-types.d.ts" />
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -26,55 +27,31 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    const initTelegramWebApp = () => {
-      if (typeof window !== 'undefined') {
-        // @ts-ignore
-        const tg = window.Telegram?.WebApp;
-        if (!tg) return;
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
 
-        tg.ready();
-        tg.expand();
-
-        // @ts-ignore
-        if (tg.initDataUnsafe?.user?.id) {
-          // @ts-ignore
-          setTelegramUserId(tg.initDataUnsafe.user.id.toString());
-        }
+      if (tg.initDataUnsafe?.user?.id) {
+        setTelegramUserId(tg.initDataUnsafe.user.id.toString());
       }
-    };
-
-    initTelegramWebApp();
+    }
   }, []);
-
-  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
-    toast({
-      title: type === 'success' ? 'Success' : 'Error',
-      description: message,
-      variant: type === 'success' ? 'default' : 'destructive',
-    });
-  };
 
   return (
     <div className="min-h-[100dvh] w-full">
       <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
-        <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b">
-          <div className="flex justify-between items-center px-4 h-14">
-            <ThemeToggle />
-            <h1 className="text-lg font-semibold">
-              {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
-            </h1>
-            <div className="w-8 h-8" />
-          </div>
-        </header>
-
-        <main className="pb-20 pt-20">
+        <main className="pb-20 pt-4">
           <AnimatePresence mode="wait">
             {currentView === 'home' && (
               <HomeView 
                 telegramUserId={telegramUserId}
                 proxy={proxy}
                 onProcessedCountChange={setProcessedCount}
-                showToast={showToast}
+                showToast={(message, type) => toast({ 
+                  title: message,
+                  variant: type === 'error' ? 'destructive' : 'default'
+                })}
               />
             )}
             {currentView === 'profile' && (
@@ -83,11 +60,7 @@ export default function Page() {
                 processedCount={processedCount}
               />
             )}
-            {currentView === 'settings' && (
-              <SettingsView 
-                showToast={showToast}
-              />
-            )}
+            {currentView === 'settings' && <SettingsView />}
           </AnimatePresence>
         </main>
 
