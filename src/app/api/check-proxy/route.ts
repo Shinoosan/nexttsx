@@ -27,9 +27,10 @@ export async function POST(request: Request) {
     clearTimeout(timeout);
 
     const isLive = response.ok;
-    const data: IpifyResponse = await response.json();
+    const data = await response.json();
+    const typedData: IpifyResponse = data as IpifyResponse;
 
-    return NextResponse.json({ isLive, ip: data.ip });
+    return NextResponse.json({ isLive, ip: typedData.ip });
   } catch (error) {
     if (error.name === 'AbortError') {
       return NextResponse.json({ isLive: false, error: 'Proxy timed out' }, { status: 408 });
