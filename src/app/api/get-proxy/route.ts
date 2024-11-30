@@ -1,15 +1,20 @@
 // src/app/api/get-proxy/route.ts
 import { NextResponse } from 'next/server';
-import { connectToDatabase } from '@/lib/mongodb';
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
 
 export async function GET() {
   try {
-    const { db } = await connectToDatabase();
-    
-    const proxyDoc = await db.collection('proxies').findOne(
-      { isActive: true },
-      { sort: { updatedAt: -1 } }
-    );
+    // Fetch the most recently updated active proxy
+    const proxyDoc = await prisma.proxy.findFirst({
+      where: {
+        isActive: true,
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+    });
 
     if (!proxyDoc) {
       return NextResponse.json(
@@ -20,9 +25,12 @@ export async function GET() {
 
     return NextResponse.json({ proxy: proxyDoc.proxy });
   } catch (error) {
+    console.error('Failed to fetch proxy:', error);
     return NextResponse.json(
       { error: 'Failed to fetch proxy' },
       { status: 500 }
     );
+  } finally {
+    await prisma.$disconnect();
   }
 }
