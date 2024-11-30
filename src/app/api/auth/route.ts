@@ -1,4 +1,3 @@
-// app/api/auth/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramWebAppData } from '@/lib/telegram';
@@ -51,15 +50,14 @@ export async function POST(req: Request) {
     // Create or update user in database with error handling
     try {
       const dbUser = await prisma.user.upsert({
-        where: { 
-          telegramId: user.id.toString() 
+        where: {
+          telegramId: user.id.toString()
         },
         update: {
           username: user.username || null,
           firstName: user.first_name,
           lastName: user.last_name || null,
           photoUrl: user.photo_url || null,
-          lastLoginAt: new Date(),
         },
         create: {
           telegramId: user.id.toString(),
@@ -67,7 +65,6 @@ export async function POST(req: Request) {
           firstName: user.first_name,
           lastName: user.last_name || null,
           photoUrl: user.photo_url || null,
-          lastLoginAt: new Date(),
           settings: {
             create: {
               theme: 'light',
