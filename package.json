@@ -47,7 +47,6 @@
     "tailwindcss-radix": "^2.8.0",
     "zod": "^3.22.4",
     "zustand": "^5.0.1",
-    "next-nodejs-polyfill-loader": "^1.0.4"
   },
   "devDependencies": {
     "@types/node": "^20",
