@@ -1,5 +1,6 @@
-/// <reference path="../types/telegram-webapp-types.d.ts" />
 'use client';
+
+import { WebApp } from '../types/telegram-webapp-types';
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
