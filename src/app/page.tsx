@@ -17,6 +17,23 @@ import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
 
+// @ts-ignore
+declare global {
+  interface Window {
+    Telegram: {
+      WebApp: {
+        ready: () => void;
+        expand: () => void;
+        initDataUnsafe: {
+          user?: {
+            id: number;
+          };
+        };
+      };
+    };
+  }
+}
+
 export default function Page() {
   const [currentView, setCurrentView] = useState('home');
   const [telegramUserId, setTelegramUserId] = useState('');
@@ -25,21 +42,18 @@ export default function Page() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // @ts-ignore
       const tg = window.Telegram?.WebApp;
       if (tg) {
         tg.ready();
         tg.expand();
-        // @ts-ignore
         if (tg.initDataUnsafe?.user?.id) {
-          // @ts-ignore
           setTelegramUserId(tg.initDataUnsafe.user.id.toString());
         }
       }
     }
   }, []);
 
-  const showToast = (message, type) => {
+  const showToast = (message: string, type?: 'error' | 'success') => {
     toast({
       title: message,
       variant: type === 'error' ? 'destructive' : 'default'
