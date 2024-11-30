@@ -1,25 +1,19 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  reactStrictMode: true,
   webpack: (config, { isServer }) => {
     if (!isServer) {
-      // Client-side fallbacks
       config.resolve.fallback = {
         ...config.resolve.fallback,
-        fs: false,
         net: false,
         tls: false,
-        dns: false,
-        child_process: false,
-        timers: false,
-        mongodb: false
-      }
+        fs: false,
+        http: false,
+        https: false,
+      };
     }
-
     return config;
   },
-  experimental: {
-    serverComponentsExternalPackages: ['mongodb']
-  }
-};
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig
