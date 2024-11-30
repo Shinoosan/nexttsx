@@ -1,8 +1,5 @@
-// src/app/api/admin/proxy/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -23,7 +20,5 @@ export async function POST(req: Request) {
       { error: 'Failed to add proxy' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
