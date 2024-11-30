@@ -10,12 +10,13 @@ import { useInterval } from '@/hooks/use-interval';
 import { toast } from '@/components/ui/use-toast';
 import { cardService } from '@/services/api';
 import { useCardStore } from '@/store/card-store';
-import { useState } from 'react';
+import { useState, Dispatch, SetStateAction } from 'react';
 
 interface HomeViewProps {
   telegramUserId: string;
   proxy: string | null;
-  onProcessedCountChange: (count: number) => void;
+  onProcessedCountChange: Dispatch<SetStateAction<number>>;
+  showToast: (message: string, type?: 'success' | 'error') => void; // Add this line
 }
 
 const GATES = ['Shopii', 'Zoura', 'Stripe'] as const;
