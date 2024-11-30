@@ -1,19 +1,22 @@
-interface TelegramWebApp {
-  WebApp: {
-    ready(): void;
-    expand(): void;
-    initDataUnsafe?: {
-      user?: {
-        id: number;
-        first_name: string;
-        last_name?: string;
-        username?: string;
-        language_code?: string;
-      };
+// src/types/telegram.d.ts
+export interface TelegramWebApp {
+  ready: () => void;
+  expand: () => void;
+  initDataUnsafe: {
+    user?: {
+      id: number;
+      first_name: string;
+      last_name?: string;
+      username?: string;
     };
+    query_id?: string;
   };
 }
 
-interface Window {
-  Telegram: TelegramWebApp;
+declare global {
+  interface Window {
+    Telegram: {
+      WebApp: TelegramWebApp;
+    };
+  }
 }
