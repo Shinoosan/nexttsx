@@ -24,16 +24,27 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-
-      if (tg.initDataUnsafe?.user?.id) {
-        setTelegramUserId(tg.initDataUnsafe.user.id.toString());
+    if (typeof window !== 'undefined') {
+      // @ts-ignore
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
+        tg.ready();
+        tg.expand();
+        // @ts-ignore
+        if (tg.initDataUnsafe?.user?.id) {
+          // @ts-ignore
+          setTelegramUserId(tg.initDataUnsafe.user.id.toString());
+        }
       }
     }
   }, []);
+
+  const showToast = (message, type) => {
+    toast({
+      title: message,
+      variant: type === 'error' ? 'destructive' : 'default'
+    });
+  };
 
   return (
     <div className="min-h-[100dvh] w-full">
@@ -45,10 +56,7 @@ export default function Page() {
                 telegramUserId={telegramUserId}
                 proxy={proxy}
                 onProcessedCountChange={setProcessedCount}
-                showToast={(message, type) => toast({ 
-                  title: message,
-                  variant: type === 'error' ? 'destructive' : 'default'
-                })}
+                showToast={showToast}
               />
             )}
             {currentView === 'profile' && (
