@@ -73,7 +73,15 @@ model ProcessedCard {
   @@index([userId, status])
   @@map("processed_cards")
 }
+model Proxy {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  proxy     String    @unique
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
 
+  @@map("proxies")
+}
 // Optional: Add this if you want to track API usage
 model ApiUsage {
   id              String    @id @default(auto()) @map("_id") @db.ObjectId
