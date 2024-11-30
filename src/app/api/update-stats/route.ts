@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
-import { PrismaClientKnownRequestError } from '@prisma/client';
+
 // Define validation schema
 const StatsUpdateSchema = z.object({
   userId: z.string().min(1),
@@ -30,7 +29,7 @@ export async function POST(request: Request) {
     const { userId, processedCount } = validatedData.data;
 
     // Add transaction to ensure data consistency
-    const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    const updatedUser = await prisma.$transaction(async (tx) => {
       const user = await tx.user.upsert({
         where: { 
           telegramId: userId.toString() 
@@ -91,14 +90,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (error instanceof PrismaClientKnownRequestError) {
-      return NextResponse.json({
-        error: 'Database error',
-        code: error.code,
-        message: error.message
-      }, { status: 500 });
-    }
-
+    // Handle other errors
     return NextResponse.json(
       { 
         error: 'Internal server error',
