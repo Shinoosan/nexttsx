@@ -1,4 +1,3 @@
-/// <reference path="../types/telegram-webapp-types.d.ts" />
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -17,6 +16,7 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
+import type { WebApp } from '@/types/telegram-webapp-types';
 
 export type ViewType = 'home' | 'profile' | 'settings';
 
