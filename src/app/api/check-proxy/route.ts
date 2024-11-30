@@ -7,6 +7,10 @@ interface IpifyResponse {
   ip: string;
 }
 
+interface CustomError extends Error {
+  name: string;
+}
+
 export async function POST(request: Request) {
   try {
     const { proxy } = await request.json();
@@ -31,8 +35,9 @@ export async function POST(request: Request) {
     const typedData: IpifyResponse = data as IpifyResponse;
 
     return NextResponse.json({ isLive, ip: typedData.ip });
-  } catch (error) {
-    if (error.name === 'AbortError') {
+  } catch (error: unknown) {
+    const customError = error as CustomError;
+    if (customError.name === 'AbortError') {
       return NextResponse.json({ isLive: false, error: 'Proxy timed out' }, { status: 408 });
     }
     return NextResponse.json({ isLive: false, error: 'Error checking proxy' }, { status: 500 });
