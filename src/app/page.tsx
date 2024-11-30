@@ -1,28 +1,5 @@
 'use client';
 
-// Type definitions
-interface TelegramWebApp {
-  ready: () => void;
-  expand: () => void;
-  initDataUnsafe: {
-    user?: {
-      id: number;
-      first_name: string;
-      last_name?: string;
-      username?: string;
-    };
-    query_id?: string;
-  };
-}
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: TelegramWebApp;
-    };
-  }
-}
-
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from '@/components/ui/card';
@@ -39,6 +16,7 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
+import type { TelegramWebApp } from '@/types/telegram';
 
 export type ViewType = 'home' | 'profile' | 'settings';
 
@@ -48,7 +26,6 @@ export default function Page() {
   const [processedCount, setProcessedCount] = useState(0);
   const { proxy } = useProxy();
 
-  // Initialize Telegram WebApp
   useEffect(() => {
     const initTelegramWebApp = () => {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
@@ -77,18 +54,16 @@ export default function Page() {
   return (
     <div className="min-h-[100dvh] w-full">
       <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
-        {/* Header Section */}
         <header className="fixed top-0 left-0 right-0 z-50 bg-background/80 backdrop-blur-lg border-b">
           <div className="flex justify-between items-center px-4 h-14">
             <ThemeToggle />
             <h1 className="text-lg font-semibold">
               {currentView.charAt(0).toUpperCase() + currentView.slice(1)}
             </h1>
-            <div className="w-8 h-8" /> {/* Spacer for balance */}
+            <div className="w-8 h-8" />
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="pb-20 pt-20">
           <AnimatePresence mode="wait">
             {currentView === 'home' && (
@@ -113,7 +88,6 @@ export default function Page() {
           </AnimatePresence>
         </main>
 
-        {/* Navigation Bar */}
         <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
           <div className="flex justify-around items-center h-16 max-w-md mx-auto">
             {['home', 'profile', 'settings'].map((view) => (
