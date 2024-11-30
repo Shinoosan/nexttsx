@@ -16,7 +16,6 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
-import type { TelegramWebApp } from '@/types/telegram';
 
 export type ViewType = 'home' | 'profile' | 'settings';
 
@@ -28,12 +27,17 @@ export default function Page() {
 
   useEffect(() => {
     const initTelegramWebApp = () => {
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
+      if (typeof window !== 'undefined') {
+        // @ts-ignore
+        const tg = window.Telegram?.WebApp;
+        if (!tg) return;
+
         tg.ready();
         tg.expand();
 
+        // @ts-ignore
         if (tg.initDataUnsafe?.user?.id) {
+          // @ts-ignore
           setTelegramUserId(tg.initDataUnsafe.user.id.toString());
         }
       }
@@ -42,7 +46,6 @@ export default function Page() {
     initTelegramWebApp();
   }, []);
 
-  // Toast notification handler
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     toast({
       title: type === 'success' ? 'Success' : 'Error',
