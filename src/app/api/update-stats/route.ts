@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client'; // Use the Prisma namespace directly
+import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from '@prisma/client/runtime';
 
 // Define validation schema
 const StatsUpdateSchema = z.object({
   userId: z.string().min(1),
-  processedCount: z.number().int().positive(),
+  processedCount: z.number().int().positive()
 });
 
 export async function POST(request: Request) {
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    if (error instanceof PrismaClientKnownRequestError) {
       return NextResponse.json({
         error: 'Database error',
         code: error.code,
