@@ -74,6 +74,18 @@ model ProcessedCard {
   @@map("processed_cards")
 }
 
+
+model GlobalStats {
+  id                    String    @id @default("global")
+  totalCardsProcessed   Int       @default(0)
+  totalLiveCards        Int       @default(0)
+  totalDeadCards        Int       @default(0)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("global_stats")
+}
+
 model Proxy {
   id                    String    @id @default(auto()) @map("_id") @db.ObjectId
   proxy                 String    @unique
