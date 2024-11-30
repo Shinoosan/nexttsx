@@ -12,8 +12,13 @@ const nextConfig = {
         https: false,
       };
     }
+
+    // Add the abort-controller package as an external module
+    config.externals = config.externals || {};
+    config.externals['abort-controller'] = 'abort-controller';
+
     return config;
   },
-}
+};
 
-module.exports = nextConfig
+module.exports = nextConfig;
