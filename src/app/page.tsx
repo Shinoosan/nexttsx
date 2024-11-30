@@ -1,3 +1,4 @@
+/// <reference path="../types/telegram-webapp-types.d.ts" />
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -30,7 +31,10 @@ export default function Page() {
       const tg = window.Telegram.WebApp;
       tg.ready();
       tg.expand();
-      if (tg.initDataUnsafe?.user?.id) {
+
+      // Check if initDataUnsafe and user exist
+      if (tg.initDataUnsafe?.user) {
+        // Access user.id correctly
         setTelegramUserId(tg.initDataUnsafe.user.id.toString());
       }
     }
