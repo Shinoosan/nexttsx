@@ -18,9 +18,11 @@ export async function GET(req: Request) {
 
     // Fetch user-specific stats
     const userStats = await prisma.user.findUnique({
-      where: { id: userId }, // Assuming 'id' is the unique identifier for the User model
+      where: { id: userId },
       select: {
         cardsProcessed: true,
+        liveCards: true,
+        deadCards: true,
         username: true,
       },
     });
@@ -33,7 +35,7 @@ export async function GET(req: Request) {
     }
 
     // Fetch global stats
-    const globalStats = await prisma.botStats.findUnique({
+    const globalStats = await prisma.globalStats.findUnique({
       where: { id: 'global' },
     });
 
