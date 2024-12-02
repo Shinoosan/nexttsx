@@ -1,126 +1,106 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useSignal, initData, type User } from '@telegram-apps/sdk-react';
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-
-interface UserProfile {
-  telegramId: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  photoUrl: string;
-  cardsProcessed: number;
-}
+import { useEffect, useState } from 'react';
 
 interface Stats {
-  user: UserProfile;
-  global: {
-    totalCardsProcessed: number;
-    totalUsers: number;
-  };
+  totalCardsProcessed: number;
+  totalUsers: number;
 }
 
 export default function ProfilePage() {
+  const initDataState = useSignal(initData.state);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const initProfile = async () => {
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-        const tg = window.Telegram.WebApp;
-        const webAppData = tg.initDataUnsafe;
-        const webAppUser = webAppData.user;
-
-        if (webAppUser) {
-          const defaultPhotoUrl = 'https://via.placeholder.com/150';
-          const photoUrl = webAppUser.photo_url || defaultPhotoUrl;
-
-          await fetch('/api/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              telegramId: webAppUser.id.toString(),
-              username: webAppUser.username || '',
-              firstName: webAppUser.first_name,
-              lastName: webAppUser.last_name || '',
-              photoUrl,
-              isPremium: webAppUser.is_premium || false,
-              languageCode: webAppUser.language_code || 'en'
-            })
-          });
-
-          await fetchStats(webAppUser.id.toString());
-        }
+    const fetchStats = async (userId: string) => {
+      try {
+        const response = await fetch(`/api/get-stats?userId=${userId}`);
+        const data = await response.json();
+        setStats(data.global);
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
-    if (window.Telegram?.WebApp) {
-      window.Telegram.WebApp.ready();
+    if (initDataState?.user) {
+      void fetchStats(initDataState.user.id.toString());
+    } else {
+      setLoading(false);
     }
+  }, [initDataState]);
 
-    void initProfile();
-  }, []);
-
-  const fetchStats = async (userId: string) => {
-    try {
-      const [userResponse, statsResponse] = await Promise.all([
-        fetch(`/api/user?telegramId=${userId}`),
-        fetch(`/api/get-stats?userId=${userId}`)
-      ]);
-
-      const userData = await userResponse.json();
-      const statsData = await statsResponse.json();
-
-      setStats({
-        user: userData,
-        global: statsData.global
-      });
-    } catch (error) {
-      console.error('Error fetching data:', error);
-    }
-  };
+  if (!initDataState?.user) {
+    return (
+      <div className="p-4">
+        <Card className="p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold">Error</h2>
+            <p className="text-muted-foreground">
+              Application was launched with missing init data
+            </p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (loading) {
     return <ProfileSkeleton />;
   }
 
+  const user = initDataState.user;
+
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
       <main className="px-4 pt-4 pb-32">
         <Card className="p-6 max-w-2xl mx-auto">
-          {stats && (
-            <div className="space-y-6">
-              <div className="flex items-center gap-4">
-                <Avatar className="w-16 h-16">
-                  <AvatarImage src={stats.user.photoUrl} alt={stats.user.username} />
-                  <AvatarFallback>
-                    {stats.user.firstName?.[0]}
-                    {stats.user.lastName?.[0]}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <h2 className="text-xl font-semibold">
-                    {stats.user.firstName} {stats.user.lastName}
-                  </h2>
-                  <p className="text-muted-foreground">@{stats.user.username}</p>
-                </div>
-              </div>
-
-              <div className="p-4 rounded-lg bg-muted">
-                <h3 className="font-semibold mb-2">Your Stats</h3>
-                <p>Cards Processed: {stats.user.cardsProcessed}</p>
-              </div>
-
-              <div className="p-4 rounded-lg bg-muted">
-                <h3 className="font-semibold mb-2">Global Stats</h3>
-                <p>Total Cards Processed: {stats.global.totalCardsProcessed}</p>
-                <p>Total Users: {stats.global.totalUsers}</p>
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={user.photoUrl} alt={user.username} />
+                <AvatarFallback>
+                  {user.firstName[0]}
+                  {user.lastName?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {user.firstName} {user.lastName}
+                </h2>
+                <p className="text-muted-foreground">
+                  @{user.username}
+                </p>
+                {user.isPremium && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Premium
+                  </span>
+                )}
               </div>
             </div>
-          )}
+
+            {stats && (
+              <>
+                <div className="p-4 rounded-lg bg-muted">
+                  <h3 className="font-semibold mb-2">Your Stats</h3>
+                  <p>Language: {user.languageCode}</p>
+                  <p>ID: {user.id}</p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-muted">
+                  <h3 className="font-semibold mb-2">Global Stats</h3>
+                  <p>Total Cards Processed: {stats.totalCardsProcessed}</p>
+                  <p>Total Users: {stats.totalUsers}</p>
+                </div>
+              </>
+            )}
+          </div>
         </Card>
       </main>
     </div>
