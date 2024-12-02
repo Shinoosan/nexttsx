@@ -5,42 +5,6 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
-// Telegram WebApp interfaces
-interface WebAppUser {
-  id: number;
-  is_bot?: boolean;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  added_to_attachment_menu?: boolean;
-  allows_write_to_pm?: boolean;
-  photo_url?: string;
-}
-
-interface WebAppInitData {
-  query_id?: string;
-  user?: WebAppUser;
-  receiver?: WebAppUser;
-  chat?: any; // WebAppChat interface can be added if needed
-  chat_type?: 'sender' | 'private' | 'group' | 'supergroup' | 'channel';
-  chat_instance?: string;
-  start_param?: string;
-}
-
-// Declare global Telegram WebApp type
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        initDataUnsafe: WebAppInitData;
-        ready: () => void;
-      };
-    };
-  }
-}
-
 interface UserProfile {
   telegramId: string;
   username: string;
@@ -70,11 +34,9 @@ export default function ProfilePage() {
         const webAppUser = webAppData.user;
 
         if (webAppUser) {
-          // Get user photo URL from WebAppUser
           const defaultPhotoUrl = 'https://via.placeholder.com/150';
           const photoUrl = webAppUser.photo_url || defaultPhotoUrl;
 
-          // Update user profile in database
           await fetch('/api/user', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -89,14 +51,12 @@ export default function ProfilePage() {
             })
           });
 
-          // Fetch updated stats
           await fetchStats(webAppUser.id.toString());
         }
       }
       setLoading(false);
     };
 
-    // Initialize Telegram WebApp
     if (window.Telegram?.WebApp) {
       window.Telegram.WebApp.ready();
     }
