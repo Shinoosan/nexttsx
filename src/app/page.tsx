@@ -21,11 +21,8 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    const initData = WebApp.initDataUnsafe;
-    const user = initData.user || null;
-
-    if (user) {
-      setUserData(user);
+    if (WebApp.initDataUnsafe.user) {
+      setUserData(WebApp.initDataUnsafe.user);
     }
   }, []);
 
@@ -36,7 +33,7 @@ export default function Page() {
     });
   };
 
-  return WebApp.wrap(
+  return (
     <div className="min-h-[100dvh] w-full">
       <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
         <main className="pb-20 pt-4">
@@ -78,7 +75,7 @@ export default function Page() {
           </div>
         </nav>
       </div>
-    </div>,
-    <Toaster />
+      <Toaster />
+    </div>
   );
 }
