@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from '@/components/ui/use-toast';
 import { ThemeToggle } from '@/components/theme-switcher';
 import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
