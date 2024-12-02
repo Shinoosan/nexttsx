@@ -8,7 +8,6 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-// ... (keep your existing imports)
 
 // Add Telegram WebApp types
 declare global {
@@ -35,10 +34,43 @@ declare global {
   }
 }
 
-// ... (keep your ProxyCheckResponse interface and checkProxy function)
+interface ProxyCheckResponse {
+  isLive: boolean;
+  ip?: string;
+  error?: string;
+}
+
+const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
+  try {
+    const response = await fetch('/api/check-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proxy }),
+    });
+
+    const data: ProxyCheckResponse = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to check proxy');
+    }
+
+    return data;
+  } catch (error) {
+    console.error('Error checking proxy:', error);
+    return { 
+      isLive: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
+  }
+};
 
 export default function SettingsPage() {
-  // ... (keep your existing state declarations)
+  const { proxy, updateUserProxy } = useProxy();
+  const [proxyInput, setProxyInput] = useState('');
+  const [isChecking, setIsChecking] = useState(false);
+  const { toast } = useToast();
+  const [telegramId, setTelegramId] = useState<string>('');
+  const [proxyIp, setProxyIp] = useState<string>('');
 
   useEffect(() => {
     const initTelegram = () => {
@@ -72,8 +104,6 @@ export default function SettingsPage() {
       setProxyInput(proxy);
     }
   }, [proxy]);
-
-  // ... (keep your existing functions)
 
   const checkAndSaveProxy = async () => {
     // If no telegram ID and in development, use a default
@@ -122,7 +152,7 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
-    if (!telegramId) {
+    if (!telegramId && process.env.NODE_ENV !== 'development') {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -132,7 +162,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await updateUserProxy(telegramId, '');
+      await updateUserProxy(telegramId || '1', '');
       setProxyInput('');
       setProxyIp('');
       toast({
@@ -213,7 +243,7 @@ export default function SettingsPage() {
         </Card>
       </main>
 
-     <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
         <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
           <Link
             href="/"
