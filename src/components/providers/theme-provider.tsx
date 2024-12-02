@@ -1,29 +1,42 @@
-// components/providers/theme-provider.tsx
 "use client"
 
-import { ThemeProvider as NextThemesProvider, type ThemeProviderProps } from "next-themes"
+import { ThemeProvider as NextThemesProvider } from "next-themes"
+import { type ReactNode } from "react"
 
-export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
+interface ThemeProviderProps {
+  children: ReactNode;
+  attribute?: string;
+  defaultTheme?: string;
+  enableSystem?: boolean;
+  disableTransitionOnChange?: boolean;
+  storageKey?: string;
+  themes?: string[];
+  value?: {
+    light: string;
+    dark: string;
+    dim?: string;
+    forest?: string;
+    sunset?: string;
+    midnight?: string;
+    ocean?: string;
+    coffee?: string;
+    rose?: string;
+    cyberpunk?: string;
+    system: string;
+  };
+}
+
+export function ThemeProvider({ 
+  children,
+  ...props 
+}: ThemeProviderProps) {
   return (
     <NextThemesProvider
       attribute="class"
       defaultTheme="system"
       enableSystem
       disableTransitionOnChange
-      storageKey="theme-preference" // Add this to ensure clean storage
-      value={{
-        light: "light",
-        dark: "dark",
-        dim: "dim",
-        forest: "forest",
-        sunset: "sunset",
-        midnight: "midnight",
-        ocean: "ocean",
-        coffee: "coffee",
-        rose: "rose",
-        cyberpunk: "cyberpunk",
-        system: "system"
-      }}
+      storageKey="theme-preference"
       {...props}
     >
       {children}
