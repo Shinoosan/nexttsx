@@ -9,7 +9,13 @@ import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 
-const checkProxy = async (proxy: string) => {
+interface ProxyCheckResponse {
+  isLive: boolean;
+  ip?: string;
+  error?: string;
+}
+
+const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
   try {
     const response = await fetch('/api/check-proxy', {
       method: 'POST',
@@ -17,53 +23,117 @@ const checkProxy = async (proxy: string) => {
       body: JSON.stringify({ proxy }),
     });
 
-    const data = await response.json();
-    return data.isLive;
+    const data: ProxyCheckResponse = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.error || 'Failed to check proxy');
+    }
+
+    return data;
   } catch (error) {
     console.error('Error checking proxy:', error);
-    return false;
+    return { 
+      isLive: false, 
+      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    };
   }
 };
 
 export default function SettingsPage() {
-  const { proxy, saveProxy } = useProxy('');
+  const { proxy, updateUserProxy } = useProxy();
   const [proxyInput, setProxyInput] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
+  const [telegramId, setTelegramId] = useState<string>('');
+  const [proxyIp, setProxyIp] = useState<string>('');
 
   useEffect(() => {
+    // Get Telegram user ID from WebApp
+    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      const user = tg.initDataUnsafe.user;
+      if (user?.id) {
+        setTelegramId(user.id.toString());
+      }
+    }
+
+    // Set initial proxy value
     if (proxy) {
       setProxyInput(proxy);
     }
   }, [proxy]);
 
   const checkAndSaveProxy = async () => {
+    if (!telegramId) {
+      toast({
+        title: 'Error',
+        description: 'Telegram user ID not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setIsChecking(true);
     try {
-      const isLive = await checkProxy(proxyInput);
+      const proxyResult = await checkProxy(proxyInput);
 
-      if (isLive) {
-        await saveProxy(proxyInput);
+      if (proxyResult.isLive) {
+        // Save proxy to database
+        await updateUserProxy(telegramId, proxyInput);
+        setProxyIp(proxyResult.ip || '');
+        
         toast({
           title: 'Success',
-          description: 'Proxy is live and has been saved',
+          description: `Proxy is live (IP: ${proxyResult.ip})`,
         });
       } else {
         toast({
           title: 'Error',
-          description: 'Proxy is not working',
+          description: proxyResult.error || 'Proxy is not working',
           variant: 'destructive',
         });
       }
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Failed to check proxy',
+        description: error instanceof Error ? error.message : 'Failed to save proxy',
         variant: 'destructive',
       });
     } finally {
       setIsChecking(false);
     }
+  };
+
+  const handleClearProxy = async () => {
+    if (!telegramId) {
+      toast({
+        title: 'Error',
+        description: 'Telegram user ID not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    try {
+      await updateUserProxy(telegramId, '');
+      setProxyInput('');
+      setProxyIp('');
+      toast({
+        title: 'Success',
+        description: 'Proxy has been cleared',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to clear proxy',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const validateProxyFormat = (proxy: string): boolean => {
+    const parts = proxy.split(':');
+    return parts.length === 4;
   };
 
   return (
@@ -76,7 +146,6 @@ export default function SettingsPage() {
           </div>
 
           <div className="space-y-6">
-            {/* User Proxy Configuration */}
             <div>
               <h2 className="text-lg font-semibold mb-2">Your Proxy Configuration</h2>
               <textarea
@@ -86,12 +155,17 @@ export default function SettingsPage() {
                 onChange={(e) => setProxyInput(e.target.value)}
                 rows={3}
               />
+              {proxyInput && !validateProxyFormat(proxyInput) && (
+                <p className="text-destructive text-sm mt-1">
+                  Invalid format. Use: IP:PORT:USERNAME:PASSWORD
+                </p>
+              )}
             </div>
 
             <div className="flex gap-4">
               <Button
                 onClick={checkAndSaveProxy}
-                disabled={isChecking || !proxyInput}
+                disabled={isChecking || !proxyInput || !validateProxyFormat(proxyInput)}
                 className="flex-1"
               >
                 {isChecking ? 'Checking...' : 'Check & Save Proxy'}
@@ -100,10 +174,7 @@ export default function SettingsPage() {
               {proxy && (
                 <Button
                   variant="destructive"
-                  onClick={() => {
-                    saveProxy(null);
-                    setProxyInput('');
-                  }}
+                  onClick={handleClearProxy}
                 >
                   Clear Proxy
                 </Button>
@@ -111,16 +182,21 @@ export default function SettingsPage() {
             </div>
 
             {proxy && (
-              <div className="p-4 rounded-lg bg-muted">
-                <h3 className="font-semibold mb-2">Current Proxy:</h3>
-                <code className="text-sm">{proxy}</code>
+              <div className="p-4 rounded-lg bg-muted space-y-2">
+                <h3 className="font-semibold">Current Proxy:</h3>
+                <code className="text-sm block">{proxy}</code>
+                {proxyIp && (
+                  <p className="text-sm text-muted-foreground">
+                    IP: {proxyIp}
+                  </p>
+                )}
               </div>
             )}
           </div>
         </Card>
       </main>
 
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
+     <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
         <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
           <Link
             href="/"
