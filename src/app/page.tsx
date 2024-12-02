@@ -2,52 +2,35 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Card } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-switcher';
-import { GateSelector } from '@/components/gate-selector';
-import { AnimatedButton } from '@/components/ui/animated-button';
-import { ProcessingStatus } from '@/components/processing-status';
-import { useInterval } from '@/hooks/use-interval';
-import { toast } from '@/components/ui/use-toast';
-import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
 import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
+import { WebApp, WebAppUser } from '@/types/telegram-webapp-types';
 
-// @ts-ignore
 declare global {
   interface Window {
-    Telegram: {
-      WebApp: {
-        ready: () => void;
-        expand: () => void;
-        initDataUnsafe: {
-          user?: {
-            id: number;
-          };
-        };
-      };
-    };
+    Telegram: WebApp;
   }
 }
 
 export default function Page() {
-  const [currentView, setCurrentView] = useState('home');
-  const [telegramUserId, setTelegramUserId] = useState('');
-  const [processedCount, setProcessedCount] = useState(0);
+  const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
+  const [userData, setUserData] = useState<WebAppUser | null>(null);
+  const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const tg = window.Telegram?.WebApp;
+      const tg = window.Telegram;
       if (tg) {
         tg.ready();
         tg.expand();
-        if (tg.initDataUnsafe?.user?.id) {
-          setTelegramUserId(tg.initDataUnsafe.user.id.toString());
+        if (tg.initDataUnsafe?.user) {
+          setUserData(tg.initDataUnsafe.user);
         }
       }
     }
@@ -66,23 +49,22 @@ export default function Page() {
         <main className="pb-20 pt-4">
           <AnimatePresence mode="wait">
             {currentView === 'home' && (
-              <HomeView 
-                telegramUserId={telegramUserId}
+              <HomeView
+                telegramUserId={userData?.id.toString() || ''}
                 proxy={proxy}
                 onProcessedCountChange={setProcessedCount}
                 showToast={showToast}
               />
             )}
             {currentView === 'profile' && (
-              <ProfileView 
-                telegramUserId={telegramUserId}
+              <ProfileView
+                telegramUserId={userData?.id.toString() || ''}
                 processedCount={processedCount}
               />
             )}
             {currentView === 'settings' && <SettingsView />}
           </AnimatePresence>
         </main>
-
         <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
           <div className="flex justify-around items-center h-16 max-w-md mx-auto">
             {['home', 'profile', 'settings'].map((view) => (
