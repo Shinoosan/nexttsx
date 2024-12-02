@@ -30,28 +30,31 @@ export default function ProfilePage() {
     const initProfile = async () => {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
-        const initData = tg.initData;
-        const user = initData ? JSON.parse(initData) : null;
+        const initData = tg.initDataUnsafe;
 
-        if (user) {
-          // Get user photo URL
-          const photoUrl = await getUserPhotoUrl(user.id);
+        if (initData) {
+          const user = initData.user;
 
-          // Update user profile in database
-          await fetch('/api/user', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              telegramId: user.id.toString(),
-              username: user.username,
-              firstName: user.first_name,
-              lastName: user.last_name,
-              photoUrl
-            })
-          });
+          if (user) {
+            // Get user photo URL from the WebAppUser object
+            const photoUrl = user.photo_url || '';
 
-          // Fetch updated stats
-          await fetchStats(user.id.toString());
+            // Update user profile in database
+            await fetch('/api/user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                telegramId: user.id.toString(),
+                username: user.username,
+                firstName: user.first_name,
+                lastName: user.last_name,
+                photoUrl
+              })
+            });
+
+            // Fetch updated stats
+            await fetchStats(user.id.toString());
+          }
         }
       }
       setLoading(false);
@@ -59,12 +62,6 @@ export default function ProfilePage() {
 
     void initProfile();
   }, []);
-
-  const getUserPhotoUrl = async (userId: number): Promise<string> => {
-    // You'll need to implement this based on Telegram's bot API
-    // Usually requires a bot token and server-side implementation
-    return `https://api.telegram.org/file/bot${process.env.NEXT_PUBLIC_BOT_TOKEN}/${userId}/photo`;
-  };
 
   const fetchStats = async (userId: string) => {
     try {
