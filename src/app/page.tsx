@@ -62,7 +62,7 @@ export default function Page() {
                 key={`${view}-button`}
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => setCurrentView(view)}
+                onClick={() => setCurrentView(view as 'home' | 'profile' | 'settings')}
                 className={`p-2 rounded-lg transition-colors ${
                   currentView === view ? 'text-primary' : 'text-muted-foreground'
                 }`}
