@@ -39,7 +39,7 @@ const ProxySettings = () => {
         toast({
           title: "Proxy is Live",
           description: "Proxy has been saved and will be used for your requests",
-          variant: "success"
+          variant: "default" // Changed from "success" to "default"
         });
       } else {
         toast({
