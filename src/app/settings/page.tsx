@@ -8,31 +8,7 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-
-// Add Telegram WebApp types
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        initDataUnsafe: {
-          user?: {
-            id: number;
-            username?: string;
-            first_name?: string;
-            last_name?: string;
-            language_code?: string;
-            is_premium?: boolean;
-          };
-          auth_date: number;
-          hash: string;
-          query_id?: string;
-        };
-        ready: () => void;
-        expand: () => void;
-      };
-    };
-  }
-}
+import type { TelegramWebApp } from '@/types/telegram';
 
 interface ProxyCheckResponse {
   isLive: boolean;
@@ -74,9 +50,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     const initTelegram = () => {
-      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+      const tg = window.Telegram?.WebApp;
+      if (tg) {
         try {
-          const tg = window.Telegram.WebApp;
           // Initialize WebApp
           tg.ready();
           
@@ -86,7 +62,6 @@ export default function SettingsPage() {
             setTelegramId(userData.id.toString());
           } else {
             console.warn('No Telegram user ID found');
-            // For development, you might want to set a default ID
             if (process.env.NODE_ENV === 'development') {
               setTelegramId('1');
             }
@@ -97,7 +72,9 @@ export default function SettingsPage() {
       }
     };
 
-    initTelegram();
+    if (typeof window !== 'undefined') {
+      initTelegram();
+    }
 
     // Set initial proxy value
     if (proxy) {
