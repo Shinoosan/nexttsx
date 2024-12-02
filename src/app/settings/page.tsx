@@ -8,54 +8,64 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
+// ... (keep your existing imports)
 
-interface ProxyCheckResponse {
-  isLive: boolean;
-  ip?: string;
-  error?: string;
-}
-
-const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
-  try {
-    const response = await fetch('/api/check-proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proxy }),
-    });
-
-    const data: ProxyCheckResponse = await response.json();
-    
-    if (!response.ok) {
-      throw new Error(data.error || 'Failed to check proxy');
-    }
-
-    return data;
-  } catch (error) {
-    console.error('Error checking proxy:', error);
-    return { 
-      isLive: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+// Add Telegram WebApp types
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        initDataUnsafe: {
+          user?: {
+            id: number;
+            username?: string;
+            first_name?: string;
+            last_name?: string;
+            language_code?: string;
+            is_premium?: boolean;
+          };
+          auth_date: number;
+          hash: string;
+          query_id?: string;
+        };
+        ready: () => void;
+        expand: () => void;
+      };
     };
   }
-};
+}
+
+// ... (keep your ProxyCheckResponse interface and checkProxy function)
 
 export default function SettingsPage() {
-  const { proxy, updateUserProxy } = useProxy();
-  const [proxyInput, setProxyInput] = useState('');
-  const [isChecking, setIsChecking] = useState(false);
-  const { toast } = useToast();
-  const [telegramId, setTelegramId] = useState<string>('');
-  const [proxyIp, setProxyIp] = useState<string>('');
+  // ... (keep your existing state declarations)
 
   useEffect(() => {
-    // Get Telegram user ID from WebApp
-    if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      const user = tg.initDataUnsafe.user;
-      if (user?.id) {
-        setTelegramId(user.id.toString());
+    const initTelegram = () => {
+      if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+        try {
+          const tg = window.Telegram.WebApp;
+          // Initialize WebApp
+          tg.ready();
+          
+          // Get user data
+          const userData = tg.initDataUnsafe?.user;
+          if (userData?.id) {
+            setTelegramId(userData.id.toString());
+          } else {
+            console.warn('No Telegram user ID found');
+            // For development, you might want to set a default ID
+            if (process.env.NODE_ENV === 'development') {
+              setTelegramId('1');
+            }
+          }
+        } catch (error) {
+          console.error('Error initializing Telegram WebApp:', error);
+        }
       }
-    }
+    };
+
+    initTelegram();
 
     // Set initial proxy value
     if (proxy) {
@@ -63,14 +73,21 @@ export default function SettingsPage() {
     }
   }, [proxy]);
 
+  // ... (keep your existing functions)
+
   const checkAndSaveProxy = async () => {
+    // If no telegram ID and in development, use a default
     if (!telegramId) {
-      toast({
-        title: 'Error',
-        description: 'Telegram user ID not found',
-        variant: 'destructive',
-      });
-      return;
+      if (process.env.NODE_ENV === 'development') {
+        setTelegramId('1');
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Telegram user ID not found',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
 
     setIsChecking(true);
@@ -79,7 +96,7 @@ export default function SettingsPage() {
 
       if (proxyResult.isLive) {
         // Save proxy to database
-        await updateUserProxy(telegramId, proxyInput);
+        await updateUserProxy(telegramId || '1', proxyInput);
         setProxyIp(proxyResult.ip || '');
         
         toast({
