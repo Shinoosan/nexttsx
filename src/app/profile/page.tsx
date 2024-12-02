@@ -5,6 +5,42 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 
+// Telegram WebApp interfaces
+interface WebAppUser {
+  id: number;
+  is_bot?: boolean;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  added_to_attachment_menu?: boolean;
+  allows_write_to_pm?: boolean;
+  photo_url?: string;
+}
+
+interface WebAppInitData {
+  query_id?: string;
+  user?: WebAppUser;
+  receiver?: WebAppUser;
+  chat?: any; // WebAppChat interface can be added if needed
+  chat_type?: 'sender' | 'private' | 'group' | 'supergroup' | 'channel';
+  chat_instance?: string;
+  start_param?: string;
+}
+
+// Declare global Telegram WebApp type
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: {
+        initDataUnsafe: WebAppInitData;
+        ready: () => void;
+      };
+    };
+  }
+}
+
 interface UserProfile {
   telegramId: string;
   username: string;
@@ -30,35 +66,40 @@ export default function ProfilePage() {
     const initProfile = async () => {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
-        const initData = tg.initDataUnsafe;
+        const webAppData = tg.initDataUnsafe;
+        const webAppUser = webAppData.user;
 
-        if (initData) {
-          const user = initData.user;
+        if (webAppUser) {
+          // Get user photo URL from WebAppUser
+          const defaultPhotoUrl = 'https://via.placeholder.com/150';
+          const photoUrl = webAppUser.photo_url || defaultPhotoUrl;
 
-          if (user) {
-            // Get user photo URL from the WebAppUser object
-            const photoUrl = user.photo_url || '';
+          // Update user profile in database
+          await fetch('/api/user', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegramId: webAppUser.id.toString(),
+              username: webAppUser.username || '',
+              firstName: webAppUser.first_name,
+              lastName: webAppUser.last_name || '',
+              photoUrl,
+              isPremium: webAppUser.is_premium || false,
+              languageCode: webAppUser.language_code || 'en'
+            })
+          });
 
-            // Update user profile in database
-            await fetch('/api/user', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                telegramId: user.id.toString(),
-                username: user.username,
-                firstName: user.first_name,
-                lastName: user.last_name,
-                photoUrl
-              })
-            });
-
-            // Fetch updated stats
-            await fetchStats(user.id.toString());
-          }
+          // Fetch updated stats
+          await fetchStats(webAppUser.id.toString());
         }
       }
       setLoading(false);
     };
+
+    // Initialize Telegram WebApp
+    if (window.Telegram?.WebApp) {
+      window.Telegram.WebApp.ready();
+    }
 
     void initProfile();
   }, []);
