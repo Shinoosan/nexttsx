@@ -1,26 +1,7 @@
+// src/components/telegram-init.tsx
 'use client';
 
 import { useEffect } from 'react';
-
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: {
-        ready(): void;
-        expand(): void;
-        initDataUnsafe?: {
-          user?: {
-            id: number;
-            first_name: string;
-            last_name?: string;
-            username?: string;
-            language_code?: string;
-          };
-        };
-      };
-    };
-  }
-}
 
 export function TelegramInit() {
   useEffect(() => {
@@ -56,4 +37,4 @@ export function TelegramInit() {
   }, []);
 
   return null;
-} 
+}
