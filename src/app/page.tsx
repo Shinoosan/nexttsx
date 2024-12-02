@@ -16,13 +16,7 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
-import { WebApp, WebAppUser } from '@/types/telegram-webapp-types';
-
-declare global {
-  interface Window {
-    Telegram: WebApp;
-  }
-}
+import WebApp, { WebAppUser } from '@twa-dev/sdk';
 
 export default function Page() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
@@ -31,15 +25,11 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const tg = window.Telegram;
-      if (tg) {
-        tg.ready();
-        tg.expand();
-        if (tg.initDataUnsafe?.user) {
-          setUserData(tg.initDataUnsafe.user);
-        }
-      }
+    const initData = WebApp.initDataUnsafe;
+    const user = initData.user || null;
+
+    if (user) {
+      setUserData(user);
     }
   }, []);
 
@@ -49,7 +39,6 @@ export default function Page() {
       variant: type === 'error' ? 'destructive' : 'default'
     });
   };
-
   return (
     <div className="min-h-[100dvh] w-full">
       <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
