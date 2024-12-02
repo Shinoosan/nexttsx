@@ -2,7 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Card } from '@/components/ui/card';
 import { ThemeToggle } from '@/components/theme-switcher';
+import { GateSelector } from '@/components/gate-selector';
+import { AnimatedButton } from '@/components/ui/animated-button';
+import { ProcessingStatus } from '@/components/processing-status';
+import { useInterval } from '@/hooks/use-interval';
+import { toast } from '@/components/ui/use-toast';
+import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
 import '@/app/globals.css';
