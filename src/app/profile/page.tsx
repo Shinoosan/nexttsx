@@ -1,4 +1,3 @@
-// settings.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -31,12 +30,13 @@ export default function ProfilePage() {
     const initProfile = async () => {
       if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
         const tg = window.Telegram.WebApp;
-        const user = tg.initDataUnsafe?.user;
-        
+        const initData = tg.initData;
+        const user = initData ? JSON.parse(initData) : null;
+
         if (user) {
           // Get user photo URL
           const photoUrl = await getUserPhotoUrl(user.id);
-          
+
           // Update user profile in database
           await fetch('/api/user', {
             method: 'POST',
