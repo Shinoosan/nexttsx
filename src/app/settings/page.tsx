@@ -64,7 +64,7 @@ export default function SettingsPage() {
     // If no telegram ID and in development, use a default
     if (!telegramId) {
       if (process.env.NODE_ENV === 'development') {
-        setTelegramId('1');
+        telegramId = '1';
       } else {
         toast({
           title: 'Error',
