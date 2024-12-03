@@ -9,6 +9,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
 
+
 interface ProxyCheckResponse {
   isLive: boolean;
   ip?: string;
