@@ -8,7 +8,6 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-import { useSignal, initData } from '@telegram-apps/sdk-react';
 
 interface ProxyCheckResponse {
   isLive: boolean;
@@ -46,31 +45,23 @@ export default function SettingsPage() {
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
   const [proxyIp, setProxyIp] = useState<string>('');
-  const initDataState = useSignal(initData.state);
 
   useEffect(() => {
-    if (initDataState?.user && proxy) {
+    if (proxy) {
       setProxyInput(proxy);
     }
-  }, [proxy, initDataState]);
+  }, [proxy]);
 
   const checkAndSaveProxy = async () => {
-    const telegramId = initDataState?.user?.id?.toString();
+    let effectiveTelegramId = '1'; // Use a default value for development
 
-    let effectiveTelegramId = telegramId;
-
-    // If no telegram ID and in development, use a default
-    if (!effectiveTelegramId) {
-      if (process.env.NODE_ENV === 'development') {
-        effectiveTelegramId = '1';
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Telegram user ID not found',
-          variant: 'destructive',
-        });
-        return;
-      }
+    if (process.env.NODE_ENV !== 'development') {
+      toast({
+        title: 'Error',
+        description: 'Telegram user ID not found',
+        variant: 'destructive',
+      });
+      return;
     }
 
     setIsChecking(true);
@@ -105,10 +96,9 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
-    const initDataState = useSignal(initData.state);
-    const telegramId = initDataState?.user?.id?.toString();
+    const effectiveTelegramId = '1'; // Use a default value for development
 
-    if (!telegramId) {
+    if (process.env.NODE_ENV !== 'development') {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -118,7 +108,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await updateUserProxy(telegramId, '');
+      await updateUserProxy(effectiveTelegramId, '');
       setProxyInput('');
       setProxyIp('');
       toast({
