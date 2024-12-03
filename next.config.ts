@@ -1,13 +1,12 @@
+// next.config.ts
 import type { NextConfig } from 'next';
 import type { Configuration as WebpackConfig } from 'webpack';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   experimental: {
-    // Updated experimental options
+    // Only keep supported experimental features
     isrMemoryCacheSize: 0,
-    serverActions: false,
-    appDir: true,
   },
   // Force static rendering
   output: 'export',
@@ -28,14 +27,29 @@ const nextConfig: NextConfig = {
       };
     }
 
-    // External modules
-    config.externals = {
-      ...(config.externals as Record<string, string> || {}),
-      'abort-controller': 'abort-controller',
-    };
+    // Correct way to add externals
+    config.externals = [
+      // Function form of externals to handle dynamic cases
+      function({ context, request }, callback) {
+        if (request === 'abort-controller') {
+          // Externalize abort-controller
+          return callback(null, 'abort-controller');
+        }
+        callback();
+      },
+      // Add any existing externals
+      ...(Array.isArray(config.externals) ? config.externals : []),
+    ];
 
     return config;
-  }
+  },
+  // Add any additional configuration needed for your static site
+  images: {
+    unoptimized: true, // Required for static export
+  },
+  // Disable server features since we're doing static export
+  serverRuntimeConfig: {},
+  publicRuntimeConfig: {},
 };
 
 export default nextConfig;
