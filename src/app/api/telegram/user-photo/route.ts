@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
 
+// Add export config to disable automatic static optimization
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge'; // Optional: Use edge runtime for better performance
+
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
@@ -41,4 +45,4 @@ export async function GET(request: Request) {
     console.error('Error fetching user photo:', error);
     return NextResponse.json({ error: 'Failed to fetch user photo' }, { status: 500 });
   }
-} 
+}
