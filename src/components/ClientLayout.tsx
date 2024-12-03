@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User as TelegramUser } from '@telegram-apps/sdk';
-import { useProxy } from '@/hooks/use-roxy';
+import { useProxy } from '@/hooks/use-proxy';
 import { useTelegramInit } from '@/hooks/useTelegramInit';
 import { useToast } from '@/components/ui/use-toast';
 import { LoadingScreen } from '@/components/LoadingScreen';
