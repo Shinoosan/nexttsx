@@ -2,8 +2,9 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramWebAppData } from '@/lib/telegram';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';  // This is the correct import
+import { Prisma } from '@prisma/client';
 
+// Schema definitions
 const TelegramUserSchema = z.object({
   id: z.number(),
   first_name: z.string(),
@@ -23,7 +24,6 @@ const InitDataSchema = z.object({
 type TelegramUser = z.infer<typeof TelegramUserSchema>;
 type InitData = z.infer<typeof InitDataSchema>;
 
-
 export async function POST(req: Request) {
   try {
     const body = await req.json().catch(() => null);
@@ -35,7 +35,30 @@ export async function POST(req: Request) {
       );
     }
 
-    // ... validation code remains the same ...
+    // Parse and validate init data
+    let parsedInitData: InitData;
+    try {
+      const rawInitData = typeof body.initData === 'string' 
+        ? JSON.parse(body.initData) 
+        : body.initData;
+        
+      parsedInitData = InitDataSchema.parse(rawInitData);
+    } catch (e) {
+      console.error('Init data validation error:', e);
+      return NextResponse.json(
+        { error: 'Invalid init data format' },
+        { status: 400 }
+      );
+    }
+
+    // Validate Telegram data
+    const isValid = validateTelegramWebAppData(parsedInitData);
+    if (!isValid) {
+      return NextResponse.json(
+        { error: 'Invalid authentication' },
+        { status: 401 }
+      );
+    }
 
     const { user } = parsedInitData;
 
