@@ -62,12 +62,17 @@ api.interceptors.response.use(
         case 500:
           throw new Error('Server error');
         default:
-          throw new Error(error.response.data || 'An error occurred');
+          // Fixed: Convert response.data to string if it's an object
+          const errorMessage = typeof error.response.data === 'object' 
+            ? JSON.stringify(error.response.data)
+            : error.response.data?.toString() || 'An error occurred';
+          throw new Error(errorMessage);
       }
     }
     throw error;
   }
 );
+
 
 const parseCardResponse = (responseText: string): {
   status: string;
