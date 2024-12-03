@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
-import { WebAppInitData } from '@twa-dev/types';
+import type { WebAppInitData } from '@twa-dev/types';
 
 // Define interfaces
 interface Stats {
@@ -28,12 +28,20 @@ const TelegramWrapper = dynamic(
   () => import('@telegram-apps/sdk-react').then((mod) => {
     const TelegramComponent = ({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
       const signal = mod.useSignal(mod.initData.state);
-      return <>{children(signal || null)}</>;
+      // Add missing properties to match WebAppInitData
+      const webAppData: WebAppInitData | null = signal ? {
+        ...signal,
+        auth_date: Math.floor(Date.now() / 1000),
+        signature: signal.hash || ''
+      } : null;
+      return <>{children(webAppData)}</>;
     };
     return TelegramComponent;
   }),
   { ssr: false }
 );
+
+// Rest of your code remains the same...
 
 function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
   const [stats, setStats] = useState<Stats | null>(null);
