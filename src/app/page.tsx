@@ -42,27 +42,27 @@ const SettingsView = dynamic(
   }
 );
 
-// Type definitions
-interface WebAppUser {
+interface TelegramUser {
   id: number;
-  is_bot?: boolean;
   first_name: string;
   last_name?: string;
   username?: string;
   language_code?: string;
   is_premium?: boolean;
+  allows_write_to_pm?: boolean;
 }
 
-interface TelegramWebApp {
-  initDataUnsafe: {
-    user?: WebAppUser;
-  };
+interface InitData {
+  user?: TelegramUser;
+  auth_date: number;
+  hash: string;
+  chat_instance?: string;
+  chat_type?: 'sender' | 'private' | 'group' | 'supergroup' | 'channel';
 }
-
 
 function PageContent() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
-  const [userData, setUserData] = useState<WebAppUser | null>(null);
+  const [userData, setUserData] = useState<TelegramUser | null>(null);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
   const [mounted, setMounted] = useState(false);
@@ -74,17 +74,21 @@ function PageContent() {
     const initializeTelegramWebApp = async () => {
       try {
         if (typeof window !== 'undefined') {
-          // Try to get WebApp from window.Telegram first
-          let WebApp = window.Telegram?.WebApp;
+          const { initData, initDataRaw } = retrieveLaunchParams();
           
-          // If not available, try importing from @twa-dev/sdk
-          if (!WebApp) {
-            const TWA = await import('@twa-dev/sdk');
-            WebApp = TWA.default;
-          }
-
-          if (WebApp?.initDataUnsafe?.user) {
-            setUserData(WebApp.initDataUnsafe.user);
+          if (initData?.user) {
+            setUserData(initData.user);
+            
+            // You can send the initDataRaw to your server for validation
+            // Example:
+            // await fetch('your-api/validate', {
+            //   method: 'POST',
+            //   headers: {
+            //     'Authorization': `tma ${initDataRaw}`
+            //   }
+            // });
+          } else {
+            throw new Error('No user data available');
           }
         }
       } catch (error) {
