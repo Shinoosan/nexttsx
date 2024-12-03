@@ -146,9 +146,9 @@ export const cardService = {
   },
 
   async checkBatch({ cards, gate, proxy, telegramId, onProgress, onCardProcessed }: BatchCheckParams): Promise<CardCheckResponse[]> {
-    const uniqueCards = [...new Set(cards)];
+    const uniqueCards = Array.from(new Set(cards)); // Fixed: Using Array.from instead of spread
     const results: CardCheckResponse[] = [];
-
+  
     for (const card of uniqueCards) {
       try {
         const response = await this.checkSingleCard({ card, gate, proxy, telegramId });
@@ -182,7 +182,7 @@ export const cardService = {
         }
       }
     }
-
+  
     return results;
   },
 
