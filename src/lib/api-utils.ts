@@ -26,10 +26,3 @@ export function handleApiError(error: unknown) {
     { status: 500 }
   );
 }
-
-// Usage example:
-try {
-  throw new ApiError(400, 'Invalid request');
-} catch (error) {
-  return handleApiError(error);
-}
