@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-switcher';
 import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
+import { retrieveLaunchParams } from '@telegram-apps/sdk';
 import '@/app/globals.css';
 
 // Loading component
