@@ -29,10 +29,13 @@ export default function ProfilePage() {
       }
     };
 
-    if (initDataState?.user) {
-      void fetchStats(initDataState.user.id.toString());
-    } else {
-      setLoading(false);
+    // Check if the window object is available (browser environment)
+    if (typeof window !== 'undefined') {
+      if (initDataState?.user) {
+        void fetchStats(initDataState.user.id.toString());
+      } else {
+        setLoading(false);
+      }
     }
   }, [initDataState]);
 
