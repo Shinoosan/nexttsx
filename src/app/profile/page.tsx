@@ -6,17 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
 
-// Dynamically import Telegram SDK components with ssr: false
-const TelegramSDK = dynamic(
-  () => import('@telegram-apps/sdk-react').then((mod) => ({
-    default: {
-      useSignal: mod.useSignal,
-      initData: mod.initData
-    }
-  })),
-  { ssr: false }
-);
-
+// Define interfaces
 interface Stats {
   totalCardsProcessed: number;
   totalUsers: number;
@@ -32,25 +22,25 @@ interface User {
   isPremium?: boolean;
 }
 
-function ProfilePage() {
-  const [initDataState, setInitDataState] = useState<{ user?: User } | null>(null);
+interface InitDataState {
+  user?: User;
+}
+
+// Create a wrapper component for Telegram SDK
+const TelegramWrapper = dynamic(
+  () => import('@telegram-apps/sdk-react').then((mod) => {
+    const TelegramComponent = ({ children }: { children: (data: InitDataState) => React.ReactNode }) => {
+      const signal = mod.useSignal(mod.initData.state);
+      return <>{children(signal)}</>;
+    };
+    return TelegramComponent;
+  }),
+  { ssr: false }
+);
+
+function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Initialize Telegram SDK after component mounts
-    const initializeTelegram = async () => {
-      try {
-        const sdk = await TelegramSDK;
-        const signal = sdk.default.useSignal(sdk.default.initData.state);
-        setInitDataState(signal);
-      } catch (error) {
-        console.error('Error initializing Telegram SDK:', error);
-      }
-    };
-
-    void initializeTelegram();
-  }, []);
 
   useEffect(() => {
     const fetchStats = async (userId: string) => {
@@ -77,9 +67,9 @@ function ProfilePage() {
       <div className="p-4">
         <Card className="p-6">
           <div className="text-center">
-            <h2 className="text-xl font-semibold">Loading...</h2>
+            <h2 className="text-xl font-semibold">Error</h2>
             <p className="text-muted-foreground">
-              Initializing application...
+              Application was launched with missing init data
             </p>
           </div>
         </Card>
@@ -143,7 +133,6 @@ function ProfilePage() {
   );
 }
 
-// Keep ProfileSkeleton as is
 function ProfileSkeleton() {
   return (
     <div className="p-4">
@@ -164,6 +153,10 @@ function ProfileSkeleton() {
   );
 }
 
-export default dynamic(() => Promise.resolve(ProfilePage), {
-  ssr: false
-});
+export default function ProfilePage() {
+  return (
+    <TelegramWrapper>
+      {(initDataState) => <ProfileContent initDataState={initDataState} />}
+    </TelegramWrapper>
+  );
+}
