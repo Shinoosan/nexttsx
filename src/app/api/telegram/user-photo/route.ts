@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server';
 
-// Add export config to disable automatic static optimization
-export const dynamic = 'force-dynamic';
-export const runtime = 'edge'; // Optional: Use edge runtime for better performance
+// Remove or modify the dynamic export
+export const dynamic = 'force-static';
+// If you need to keep some dynamic functionality, you can use:
+// export const revalidate = 3600; // revalidate every hour
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -43,6 +44,9 @@ export async function GET(request: Request) {
     return NextResponse.json({ photoUrl });
   } catch (error) {
     console.error('Error fetching user photo:', error);
-    return NextResponse.json({ error: 'Failed to fetch user photo' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to fetch user photo' },
+      { status: 500 }
+    );
   }
 }
