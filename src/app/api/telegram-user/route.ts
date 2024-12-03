@@ -1,3 +1,4 @@
+// src/app/api/telegram-user/route.ts
 import { prisma } from '@/lib/prisma';
 import { NextResponse } from 'next/server';
 
@@ -18,36 +19,68 @@ export async function POST(request: Request) {
   try {
     const userData: TelegramWebAppUser = await request.json();
 
-    const user = await prisma.webAppUser.upsert({
+    const user = await prisma.user.upsert({
       where: {
-        id: userData.id,
+        telegramId: userData.id.toString(), // Convert to string as per schema
       },
       update: {
         isBot: userData.is_bot || false,
         firstName: userData.first_name,
         lastName: userData.last_name || null,
         username: userData.username || null,
-        languageCode: userData.language_code || null,
+        languageCode: userData.language_code || 'en',
         isPremium: userData.is_premium || false,
-        addedToAttachmentMenu: userData.added_to_attachment_menu || false,
         allowsWriteToPm: userData.allows_write_to_pm || false,
         photoUrl: userData.photo_url || null,
+        lastLoginAt: new Date(),
       },
       create: {
-        id: userData.id,
+        telegramId: userData.id.toString(),
         isBot: userData.is_bot || false,
         firstName: userData.first_name,
         lastName: userData.last_name || null,
         username: userData.username || null,
-        languageCode: userData.language_code || null,
+        languageCode: userData.language_code || 'en',
         isPremium: userData.is_premium || false,
-        addedToAttachmentMenu: userData.added_to_attachment_menu || false,
         allowsWriteToPm: userData.allows_write_to_pm || false,
         photoUrl: userData.photo_url || null,
+        cardsProcessed: 0,
+        liveCards: 0,
+        deadCards: 0,
       },
     });
 
-    return NextResponse.json(user);
+    // Create default settings if they don't exist
+    const existingSettings = await prisma.settings.findUnique({
+      where: {
+        userId: user.id
+      }
+    });
+
+    if (!existingSettings) {
+      await prisma.settings.create({
+        data: {
+          userId: user.id,
+          theme: 'light',
+          language: userData.language_code || 'en',
+          notifications: true,
+          autoProcess: false,
+          defaultGate: 'stripe',
+        },
+      });
+    }
+
+    // Return user with settings
+    const userWithSettings = await prisma.user.findUnique({
+      where: {
+        id: user.id
+      },
+      include: {
+        settings: true
+      }
+    });
+
+    return NextResponse.json(userWithSettings);
   } catch (error) {
     console.error('Error saving Telegram user:', error);
     return NextResponse.json(
@@ -59,20 +92,23 @@ export async function POST(request: Request) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const userId = searchParams.get('id');
+  const telegramId = searchParams.get('id');
 
-  if (!userId) {
+  if (!telegramId) {
     return NextResponse.json(
-      { error: 'User ID is required' },
+      { error: 'Telegram ID is required' },
       { status: 400 }
     );
   }
 
   try {
-    const user = await prisma.webAppUser.findUnique({
+    const user = await prisma.user.findUnique({
       where: {
-        id: parseInt(userId),
+        telegramId: telegramId.toString(),
       },
+      include: {
+        settings: true
+      }
     });
 
     if (!user) {
@@ -90,4 +126,4 @@ export async function GET(request: Request) {
       { status: 500 }
     );
   }
-} 
+}
