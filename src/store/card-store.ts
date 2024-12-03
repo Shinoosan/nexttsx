@@ -1,11 +1,9 @@
 // store/card-store.ts
 import { create } from 'zustand';
+import type { WebAppUser } from '@twa-dev/types';
 
 type Gate = 'Shopii' | 'Zoura' | 'Stripe';
 type Section = 'LIVES' | 'DEAD';
-
-// Add TelegramWebAppUser type from your types.d.ts
-type TelegramUser = TelegramWebAppUser;
 
 export type CardResult = {
   card: string;
@@ -35,7 +33,7 @@ interface CardStore {
   currentGate: Gate;
   
   // Add Telegram user properties
-  telegramUser: TelegramUser | null;
+  telegramUser: WebAppUser | null;
   
   // Existing actions
   setInputText: (text: string) => void;
@@ -50,7 +48,7 @@ interface CardStore {
   clearCards: () => void;
   
   // Add Telegram user action
-  setTelegramUser: (user: TelegramUser) => void;
+  setTelegramUser: (user: WebAppUser) => void;
 }
 
 export const useCardStore = create<CardStore>((set) => ({
