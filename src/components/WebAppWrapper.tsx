@@ -11,17 +11,19 @@ interface WebAppWrapperProps {
 
 export function WebAppWrapper({ children }: WebAppWrapperProps) {
   useEffect(() => {
-    if (WebApp.isReady) {
+    try {
       WebApp.ready();
       
-      // Emit user data to parent component
-      if (WebApp.initDataUnsafe.user) {
+      // Emit user data to parent component if available
+      if (WebApp.initDataUnsafe?.user) {
         window.dispatchEvent(
           new CustomEvent<WebAppUser>('webappUserData', {
             detail: WebApp.initDataUnsafe.user
           })
         );
       }
+    } catch (error) {
+      console.error('Error initializing WebApp:', error);
     }
   }, []);
 

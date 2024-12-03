@@ -65,10 +65,15 @@ declare module '@twa-dev/types' {
 
 declare module '@twa-dev/sdk' {
   interface WebApp {
-    isReady: boolean;
     ready: () => void;
     initDataUnsafe: {
       user?: WebAppUser;
+    };
+    MainButton: {
+      show: () => void;
+      hide: () => void;
+      setText: (text: string) => void;
+      onClick: (callback: () => void) => void;
     };
   }
   const WebApp: WebApp;
