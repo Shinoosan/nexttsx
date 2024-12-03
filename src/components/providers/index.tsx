@@ -6,7 +6,11 @@ import { ProxyProvider } from "@/hooks/use-proxy"
 import { TelegramInit } from '@/components/telegram-init'
 import { useEffect, useState } from 'react'
 
-export function Providers({ children }: { children: React.ReactNode }) {
+interface ProvidersProps {
+  children: React.ReactNode;
+}
+
+export function Providers({ children }: ProvidersProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -18,7 +22,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <ThemeProvider 
+    <ThemeProvider
       attribute="class"
       defaultTheme="system"
       enableSystem
