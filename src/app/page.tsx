@@ -8,17 +8,15 @@ import { ThemeToggle } from '@/components/theme-switcher';
 import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
-import { retrieveLaunchParams } from '@telegram-apps/sdk';
+import { retrieveLaunchParams, type User as TelegramUser } from '@telegram-apps/sdk';
 import '@/app/globals.css';
 
-// Loading component
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
   </div>
 );
 
-// Lazy load views with proper loading states
 const HomeView = dynamic(
   () => import('@/components/views/home-view'),
   {
@@ -43,28 +41,6 @@ const SettingsView = dynamic(
   }
 );
 
-// Type definitions
-interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  allows_write_to_pm?: boolean;
-  added_to_attachment_menu?: boolean;
-  is_bot?: boolean;
-  photo_url?: string;
-}
-
-interface InitData {
-  user?: TelegramUser;
-  auth_date: number;
-  hash: string;
-  chat_instance?: string;
-  chat_type?: 'sender' | 'private' | 'group' | 'supergroup' | 'channel';
-}
-
 function PageContent() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
   const [userData, setUserData] = useState<TelegramUser | null>(null);
@@ -82,29 +58,41 @@ function PageContent() {
           const { initData, initDataRaw } = retrieveLaunchParams();
           
           if (initData?.user) {
-            // Create a properly typed user object
             const user: TelegramUser = {
               id: initData.user.id,
-              first_name: initData.user.first_name || '',
-              last_name: initData.user.last_name,
+              firstName: initData.user.firstName,
+              lastName: initData.user.lastName,
               username: initData.user.username,
-              language_code: initData.user.language_code,
-              is_premium: initData.user.is_premium,
-              allows_write_to_pm: initData.user.allows_write_to_pm,
-              added_to_attachment_menu: initData.user.added_to_attachment_menu,
-              is_bot: initData.user.is_bot,
-              photo_url: initData.user.photo_url
+              languageCode: initData.user.languageCode,
+              isPremium: initData.user.isPremium,
+              allowsWriteToPm: initData.user.allowsWriteToPm,
+              addedToAttachmentMenu: initData.user.addedToAttachmentMenu,
+              isBot: initData.user.isBot,
+              photoUrl: initData.user.photoUrl
             };
             
             setUserData(user);
 
-            // Optional: Send initDataRaw to your server for validation
-            // await fetch('your-api/validate', {
-            //   method: 'POST',
-            //   headers: {
-            //     'Authorization': `tma ${initDataRaw}`
-            //   }
-            // });
+            // Optional: Validate init data on your server
+            try {
+              const response = await fetch('/api/validate-init-data', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `tma ${initDataRaw}`
+                }
+              });
+              
+              if (!response.ok) {
+                throw new Error('Failed to validate init data');
+              }
+            } catch (error) {
+              console.error('Validation error:', error);
+              toast({
+                title: "Failed to validate Telegram data",
+                variant: "destructive"
+              });
+            }
           } else {
             throw new Error('No user data available');
           }
@@ -134,69 +122,98 @@ function PageContent() {
     return <LoadingScreen />;
   }
 
+  const renderView = () => {
+    switch (currentView) {
+      case 'home':
+        return (
+          <motion.div
+            key="home"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <HomeView
+              telegramUserId={userData?.id?.toString() || ''}
+              proxy={proxy}
+              onProcessedCountChange={setProcessedCount}
+              showToast={showToast}
+            />
+          </motion.div>
+        );
+      case 'profile':
+        return (
+          <motion.div
+            key="profile"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <ProfileView
+              telegramUserId={userData?.id?.toString() || ''}
+              processedCount={processedCount}
+              userData={userData}
+            />
+          </motion.div>
+        );
+      case 'settings':
+        return (
+          <motion.div
+            key="settings"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <SettingsView />
+          </motion.div>
+        );
+    }
+  };
+
   return (
     <div className="min-h-[100dvh] w-full">
       <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
+        <header className="fixed top-0 right-0 p-4 z-50">
+          <ThemeToggle />
+        </header>
+
         <main className="pb-20 pt-4">
           <AnimatePresence mode="wait">
-            {currentView === 'home' && (
-              <motion.div
-                key="home"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <HomeView
-                  telegramUserId={userData?.id?.toString() || ''}
-                  proxy={proxy}
-                  onProcessedCountChange={setProcessedCount}
-                  showToast={showToast}
-                />
-              </motion.div>
-            )}
-            {currentView === 'profile' && (
-              <motion.div
-                key="profile"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <ProfileView
-                  telegramUserId={userData?.id?.toString() || ''}
-                  processedCount={processedCount}
-                />
-              </motion.div>
-            )}
-            {currentView === 'settings' && (
-              <motion.div
-                key="settings"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <SettingsView />
-              </motion.div>
-            )}
+            {renderView()}
           </AnimatePresence>
         </main>
 
         <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
           <div className="flex justify-around items-center h-16 max-w-md mx-auto">
-            {['home', 'profile', 'settings'].map((view) => (
-              <motion.button
-                key={`${view}-button`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={() => setCurrentView(view as 'home' | 'profile' | 'settings')}
-                className={`p-2 rounded-lg transition-colors ${
-                  currentView === view ? 'text-primary' : 'text-muted-foreground'
-                }`}
-              >
-                {view === 'home' && <Home className="w-6 h-6" />}
-                {view === 'profile' && <User className="w-6 h-6" />}
-                {view === 'settings' && <Settings className="w-6 h-6" />}
-              </motion.button>
-            ))}
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setCurrentView('home')}
+              className={`p-2 rounded-lg transition-colors ${
+                currentView === 'home' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <Home className="w-6 h-6" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setCurrentView('profile')}
+              className={`p-2 rounded-lg transition-colors ${
+                currentView === 'profile' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <User className="w-6 h-6" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setCurrentView('settings')}
+              className={`p-2 rounded-lg transition-colors ${
+                currentView === 'settings' ? 'text-primary' : 'text-muted-foreground'
+              }`}
+            >
+              <Settings className="w-6 h-6" />
+            </motion.button>
           </div>
         </nav>
       </div>
@@ -205,7 +222,6 @@ function PageContent() {
   );
 }
 
-// Export the component with proper mounting checks
 export default function Page() {
   const [mounted, setMounted] = useState(false);
 
