@@ -21,9 +21,11 @@ export function ProxyProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Load saved proxy from localStorage on mount
+  // Safe localStorage access
   useEffect(() => {
-    const savedProxy = localStorage.getItem('proxy');
+    const savedProxy = typeof window !== 'undefined' 
+      ? localStorage.getItem('proxy')
+      : null;
     if (savedProxy) {
       setProxy(savedProxy);
     }
@@ -51,7 +53,9 @@ export function ProxyProvider({ children }: { children: ReactNode }) {
       }
 
       setProxy(newProxy);
-      localStorage.setItem('proxy', newProxy);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('proxy', newProxy);
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       setError(errorMessage);
@@ -65,7 +69,9 @@ export function ProxyProvider({ children }: { children: ReactNode }) {
   const saveProxy = (newProxy: string) => {
     try {
       setProxy(newProxy);
-      localStorage.setItem('proxy', newProxy);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('proxy', newProxy);
+      }
     } catch (error) {
       console.error('Error saving proxy to localStorage:', error);
       setError('Failed to save proxy settings');
@@ -91,30 +97,3 @@ export function useProxy(): ProxyContextType {
   }
   return context;
 }
-
-// Example usage in a component:
-/*
-'use client';
-
-import { useProxy } from '@/hooks/use-proxy';
-
-export function ProxySettings({ telegramId }: { telegramId: string }) {
-  const { proxy, updateUserProxy, isLoading, error } = useProxy();
-
-  const handleProxyUpdate = async (newProxy: string) => {
-    try {
-      await updateUserProxy(telegramId, newProxy);
-    } catch (error) {
-      // Handle error
-    }
-  };
-
-  return (
-    <div>
-      {isLoading && <div>Updating proxy...</div>}
-      {error && <div className="text-red-500">{error}</div>}
-      {/* Your proxy settings UI *//*}
-    </div>
-  );
-}
-*/
