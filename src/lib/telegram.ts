@@ -1,8 +1,6 @@
 // src/lib/telegram.ts
-import TelegramBot from 'node-telegram-bot-api';
+import { WebApp } from '@twa-dev/sdk';
 import crypto from 'crypto';
-
-const bot = new TelegramBot(process.env.NEXT_PUBLIC_BOT_TOKEN!, { polling: false });
 
 interface TelegramWebAppData {
   query_id: string;
@@ -17,6 +15,21 @@ interface TelegramWebAppData {
   hash: string;
 }
 
+// Initialize WebApp
+export const initTelegramApp = () => {
+  if (!WebApp.isInitialized) {
+    WebApp.init();
+  }
+  return WebApp;
+};
+
+// Get current user data from WebApp
+export const getCurrentUser = () => {
+  const webApp = initTelegramApp();
+  return webApp.initDataUnsafe?.user;
+};
+
+// Validate Telegram WebApp data
 export const validateTelegramWebAppData = (data: TelegramWebAppData): boolean => {
   const botToken = process.env.NEXT_PUBLIC_BOT_TOKEN;
   
@@ -50,16 +63,22 @@ export const validateTelegramWebAppData = (data: TelegramWebAppData): boolean =>
   return signature === hash;
 };
 
-export { bot };
-
-// Helper function to get user data from Telegram
+// API calls for bot interactions
 export const getTelegramUserData = async (userId: number) => {
   try {
-    const chatMember = await bot.getChatMember('@your_channel_name', userId);
-    return {
-      isMember: chatMember.status !== 'left' && chatMember.status !== 'kicked',
-      userData: chatMember.user
-    };
+    const response = await fetch('/api/telegram/user-data', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user data');
+    }
+
+    return await response.json();
   } catch (error) {
     console.error('Error checking user membership:', error);
     return {
@@ -67,4 +86,42 @@ export const getTelegramUserData = async (userId: number) => {
       userData: null
     };
   }
+};
+
+// Helper function to send messages through the bot
+export const sendMessage = async (chatId: number, message: string) => {
+  try {
+    const response = await fetch('/api/telegram/send-message', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, message }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to send message');
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
+  }
+};
+
+// WebApp specific methods
+export const closeWebApp = () => {
+  const webApp = initTelegramApp();
+  webApp.close();
+};
+
+export const showAlert = (message: string) => {
+  const webApp = initTelegramApp();
+  webApp.showAlert(message);
+};
+
+export const showConfirm = (message: string) => {
+  const webApp = initTelegramApp();
+  return webApp.showConfirm(message);
 };
