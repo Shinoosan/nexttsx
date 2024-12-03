@@ -10,23 +10,38 @@ import { useProxy } from '@/hooks/use-proxy';
 import '@/app/globals.css';
 import dynamic from 'next/dynamic';
 
-// Dynamically import views
-const HomeView = dynamic(() => import('@/components/views/home-view'), {
-  ssr: false,
-  loading: () => <div>Loading...</div>
-});
+// Dynamically import views with loading fallback
+const HomeView = dynamic(
+  () => import('@/components/views/home-view').then(mod => ({ 
+    default: mod.default 
+  })),
+  {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+);
 
-const ProfileView = dynamic(() => import('@/components/views/profile-view'), {
-  ssr: false,
-  loading: () => <div>Loading...</div>
-});
+const ProfileView = dynamic(
+  () => import('@/components/views/profile-view').then(mod => ({ 
+    default: mod.default 
+  })),
+  {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+);
 
-const SettingsView = dynamic(() => import('@/components/views/settings-view'), {
-  ssr: false,
-  loading: () => <div>Loading...</div>
-});
+const SettingsView = dynamic(
+  () => import('@/components/views/settings-view').then(mod => ({ 
+    default: mod.default 
+  })),
+  {
+    ssr: false,
+    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+  }
+);
 
-// Type for Telegram Web App User
+// Type definitions
 interface WebAppUser {
   id: number;
   is_bot?: boolean;
@@ -37,26 +52,30 @@ interface WebAppUser {
   is_premium?: boolean;
 }
 
-const Page = () => {
+function PageContent() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
   const [userData, setUserData] = useState<WebAppUser | null>(null);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
   const [isClient, setIsClient] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     setIsClient(true);
     
-    // Initialize Telegram Web App
     const initializeTelegramWebApp = async () => {
       try {
-        const WebApp = (await import('@twa-dev/sdk')).default;
-        const initData = WebApp.initDataUnsafe;
-        if (initData && initData.user) {
-          setUserData(initData.user);
+        if (typeof window !== 'undefined') {
+          const WebApp = (await import('@twa-dev/sdk')).default;
+          const initData = WebApp.initDataUnsafe;
+          if (initData && initData.user) {
+            setUserData(initData.user);
+          }
         }
       } catch (error) {
         console.error('Error initializing Telegram Web App:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -70,8 +89,8 @@ const Page = () => {
     });
   };
 
-  if (!isClient) {
-    return null; // or return a loading spinner
+  if (!isClient || isLoading) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
 
   return (
@@ -81,7 +100,7 @@ const Page = () => {
           <AnimatePresence mode="wait">
             {currentView === 'home' && (
               <HomeView
-                telegramUserId={userData?.id.toString() || ''}
+                telegramUserId={userData?.id?.toString() || ''}
                 proxy={proxy}
                 onProcessedCountChange={setProcessedCount}
                 showToast={showToast}
@@ -89,7 +108,7 @@ const Page = () => {
             )}
             {currentView === 'profile' && (
               <ProfileView
-                telegramUserId={userData?.id.toString() || ''}
+                telegramUserId={userData?.id?.toString() || ''}
                 processedCount={processedCount}
               />
             )}
@@ -119,9 +138,9 @@ const Page = () => {
       <Toaster />
     </div>
   );
-};
+}
 
-// Export with dynamic to disable SSR
-export default dynamic(() => Promise.resolve(Page), {
+// Export the page component with SSR disabled
+export default dynamic(() => Promise.resolve(PageContent), {
   ssr: false
 });

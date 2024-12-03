@@ -6,7 +6,6 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
 import type { WebAppInitData } from '@twa-dev/types';
-import WebApp from '@twa-dev/sdk';
 
 // Define interfaces
 interface Stats {
@@ -14,27 +13,56 @@ interface Stats {
   totalUsers: number;
 }
 
-// Create a wrapper component for Telegram SDK
+interface TelegramUser {
+  id: number;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+  photo_url?: string;
+}
+
+// Create a wrapper component for Telegram SDK with proper error handling
 const TelegramWrapper = dynamic(
   () => Promise.resolve(({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
-    const initData = WebApp.initData ? JSON.parse(atob(WebApp.initData)) : null;
+    let initData = null;
+    
+    if (typeof window !== 'undefined') {
+      try {
+        const WebApp = require('@twa-dev/sdk').default;
+        initData = WebApp.initData ? JSON.parse(atob(WebApp.initData)) : null;
+      } catch (error) {
+        console.error('Error initializing Telegram Web App:', error);
+      }
+    }
+    
     return <>{children(initData)}</>;
   }),
-  { ssr: false }
+  { 
+    ssr: false,
+    loading: () => <ProfileSkeleton />
+  }
 );
 
 function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchStats = async (userId: string) => {
       try {
+        setLoading(true);
         const response = await fetch(`/api/get-stats?userId=${userId}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch stats');
+        }
         const data = await response.json();
         setStats(data.global);
       } catch (error) {
         console.error('Error fetching stats:', error);
+        setError('Failed to load stats');
       } finally {
         setLoading(false);
       }
@@ -66,6 +94,19 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
     return <ProfileSkeleton />;
   }
 
+  if (error) {
+    return (
+      <div className="p-4">
+        <Card className="p-6">
+          <div className="text-center">
+            <h2 className="text-xl font-semibold">Error</h2>
+            <p className="text-muted-foreground">{error}</p>
+          </div>
+        </Card>
+      </div>
+    );
+  }
+
   const user = initData.user;
 
   return (
@@ -75,7 +116,7 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-16 h-16">
-                <AvatarImage src={user.photo_url} alt={user.username} />
+                <AvatarImage src={user.photo_url} alt={user.username || user.first_name} />
                 <AvatarFallback>
                   {user.first_name[0]}
                   {user.last_name?.[0]}
@@ -85,9 +126,11 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
                 <h2 className="text-xl font-semibold">
                   {user.first_name} {user.last_name}
                 </h2>
-                <p className="text-muted-foreground">
-                  @{user.username}
-                </p>
+                {user.username && (
+                  <p className="text-muted-foreground">
+                    @{user.username}
+                  </p>
+                )}
                 {user.is_premium && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     Premium
@@ -100,7 +143,7 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
               <>
                 <div className="p-4 rounded-lg bg-muted">
                   <h3 className="font-semibold mb-2">Your Stats</h3>
-                  <p>Language: {user.language_code}</p>
+                  <p>Language: {user.language_code || 'Not specified'}</p>
                   <p>ID: {user.id}</p>
                 </div>
 
@@ -138,10 +181,11 @@ function ProfileSkeleton() {
   );
 }
 
-export default function ProfilePage() {
-  return (
-    <TelegramWrapper>
-      {(initData) => <ProfileContent initData={initData} />}
-    </TelegramWrapper>
-  );
-}
+// Export with dynamic to disable SSR
+export default dynamic(() => Promise.resolve(() => (
+  <TelegramWrapper>
+    {(initData) => <ProfileContent initData={initData} />}
+  </TelegramWrapper>
+)), {
+  ssr: false
+});
