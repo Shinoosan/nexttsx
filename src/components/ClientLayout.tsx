@@ -12,13 +12,14 @@ import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
 
-type ViewType = 'home' | 'profile' | 'settings';
+export type ViewType = 'home' | 'profile' | 'settings';
 
 interface ClientLayoutProps {
   defaultView: ViewType;
+  children?: React.ReactNode;
 }
 
-export function ClientLayout({ defaultView }: ClientLayoutProps) {
+export function ClientLayout({ defaultView, children }: ClientLayoutProps) {
   const [currentView, setCurrentView] = useState<ViewType>(defaultView);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
@@ -27,6 +28,10 @@ export function ClientLayout({ defaultView }: ClientLayoutProps) {
 
   if (isLoading) {
     return <LoadingScreen />;
+  }
+
+  if (children) {
+    return <>{children}</>;
   }
 
   if (!isInitialized) {
