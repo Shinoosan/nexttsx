@@ -43,6 +43,7 @@ const SettingsView = dynamic(
   }
 );
 
+// Type definitions
 interface TelegramUser {
   id: number;
   first_name: string;
@@ -51,6 +52,9 @@ interface TelegramUser {
   language_code?: string;
   is_premium?: boolean;
   allows_write_to_pm?: boolean;
+  added_to_attachment_menu?: boolean;
+  is_bot?: boolean;
+  photo_url?: string;
 }
 
 interface InitData {
@@ -78,10 +82,23 @@ function PageContent() {
           const { initData, initDataRaw } = retrieveLaunchParams();
           
           if (initData?.user) {
-            setUserData(initData.user);
+            // Create a properly typed user object
+            const user: TelegramUser = {
+              id: initData.user.id,
+              first_name: initData.user.first_name || '',
+              last_name: initData.user.last_name,
+              username: initData.user.username,
+              language_code: initData.user.language_code,
+              is_premium: initData.user.is_premium,
+              allows_write_to_pm: initData.user.allows_write_to_pm,
+              added_to_attachment_menu: initData.user.added_to_attachment_menu,
+              is_bot: initData.user.is_bot,
+              photo_url: initData.user.photo_url
+            };
             
-            // You can send the initDataRaw to your server for validation
-            // Example:
+            setUserData(user);
+
+            // Optional: Send initDataRaw to your server for validation
             // await fetch('your-api/validate', {
             //   method: 'POST',
             //   headers: {
