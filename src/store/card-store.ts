@@ -1,7 +1,11 @@
+// store/card-store.ts
 import { create } from 'zustand';
 
 type Gate = 'Shopii' | 'Zoura' | 'Stripe';
 type Section = 'LIVES' | 'DEAD';
+
+// Add TelegramWebAppUser type from your types.d.ts
+type TelegramUser = TelegramWebAppUser;
 
 export type CardResult = {
   card: string;
@@ -19,6 +23,7 @@ export type CardResult = {
 };
 
 interface CardStore {
+  // Existing properties
   inputText: string;
   formattedCards: string[];
   processedCount: number;
@@ -28,6 +33,11 @@ interface CardStore {
   deadCards: CardResult[];
   activeSection: Section;
   currentGate: Gate;
+  
+  // Add Telegram user properties
+  telegramUser: TelegramUser | null;
+  
+  // Existing actions
   setInputText: (text: string) => void;
   setFormattedCards: (cards: string[]) => void;
   setProcessedCount: (count: number) => void;
@@ -38,9 +48,13 @@ interface CardStore {
   setActiveSection: (section: Section) => void;
   setCurrentGate: (gate: Gate) => void;
   clearCards: () => void;
+  
+  // Add Telegram user action
+  setTelegramUser: (user: TelegramUser) => void;
 }
 
 export const useCardStore = create<CardStore>((set) => ({
+  // Existing state
   inputText: '',
   formattedCards: [],
   processedCount: 0,
@@ -50,6 +64,11 @@ export const useCardStore = create<CardStore>((set) => ({
   deadCards: [],
   activeSection: 'LIVES',
   currentGate: 'Stripe',
+  
+  // Add Telegram user state
+  telegramUser: null,
+  
+  // Existing actions
   setInputText: (text) => set({ inputText: text }),
   setFormattedCards: (cards) => set({ formattedCards: cards }),
   setProcessedCount: (count) => set({ processedCount: count }),
@@ -60,4 +79,7 @@ export const useCardStore = create<CardStore>((set) => ({
   setActiveSection: (section) => set({ activeSection: section }),
   setCurrentGate: (gate) => set({ currentGate: gate }),
   clearCards: () => set({ liveCards: [], deadCards: [] }),
+  
+  // Add Telegram user action
+  setTelegramUser: (user) => set({ telegramUser: user }),
 }));
