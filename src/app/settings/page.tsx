@@ -53,9 +53,9 @@ export default function SettingsPage() {
   }, [proxy]);
 
   const checkAndSaveProxy = async () => {
-    let effectiveTelegramId = '1'; // Use a default value for development
-
-    if (process.env.NODE_ENV !== 'development') {
+    const effectiveTelegramId = process.env.NODE_ENV === 'development' ? '1' : null;
+  
+    if (!effectiveTelegramId) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -63,16 +63,16 @@ export default function SettingsPage() {
       });
       return;
     }
-
+  
     setIsChecking(true);
     try {
       const proxyResult = await checkProxy(proxyInput);
-
+  
       if (proxyResult.isLive) {
         // Save proxy to database
         await updateUserProxy(effectiveTelegramId, proxyInput);
         setProxyIp(proxyResult.ip || '');
-
+  
         toast({
           title: 'Success',
           description: `Proxy is live (IP: ${proxyResult.ip})`,
@@ -94,11 +94,11 @@ export default function SettingsPage() {
       setIsChecking(false);
     }
   };
-
+  
   const handleClearProxy = async () => {
-    const effectiveTelegramId = '1'; // Use a default value for development
-
-    if (process.env.NODE_ENV !== 'development') {
+    const effectiveTelegramId = process.env.NODE_ENV === 'development' ? '1' : null;
+  
+    if (!effectiveTelegramId) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -106,7 +106,7 @@ export default function SettingsPage() {
       });
       return;
     }
-
+  
     try {
       await updateUserProxy(effectiveTelegramId, '');
       setProxyInput('');
