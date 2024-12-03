@@ -1,9 +1,9 @@
+// src/app/api/update-stats/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 
-// Define validation schema
 const StatsUpdateSchema = z.object({
   userId: z.string().min(1),
   processedCount: z.number().int().positive()
@@ -11,25 +11,18 @@ const StatsUpdateSchema = z.object({
 
 export async function POST(request: Request) {
   try {
-    // Parse and validate request body
     const body = await request.json();
-    
-    // Validate the input
     const validatedData = StatsUpdateSchema.safeParse(body);
     
     if (!validatedData.success) {
       return NextResponse.json(
-        { 
-          error: 'Invalid input', 
-          details: validatedData.error.issues 
-        },
+        { error: 'Invalid input', details: validatedData.error.issues },
         { status: 400 }
       );
     }
 
     const { userId, processedCount } = validatedData.data;
 
-    // Add transaction to ensure data consistency
     const updatedUser = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const user = await tx.user.upsert({
         where: { 
@@ -41,15 +34,47 @@ export async function POST(request: Request) {
         },
         create: {
           telegramId: userId.toString(),
+          firstName: 'Unknown', // Required field
+          lastName: null,
+          username: null,
+          languageCode: 'en',
+          photoUrl: null,
+          isPremium: false,
+          isBot: false,
+          allowsWriteToPm: false,
           cardsProcessed: processedCount,
+          liveCards: 0,
+          deadCards: 0,
           lastLoginAt: new Date(),
         },
         select: {
+          id: true,
           telegramId: true,
+          firstName: true,
           cardsProcessed: true,
+          liveCards: true,
+          deadCards: true,
           lastLoginAt: true,
         }
       });
+
+      // Create default settings if they don't exist
+      const existingSettings = await tx.settings.findUnique({
+        where: { userId: user.id }
+      });
+
+      if (!existingSettings) {
+        await tx.settings.create({
+          data: {
+            userId: user.id,
+            theme: 'light',
+            language: 'en',
+            notifications: true,
+            autoProcess: false,
+            defaultGate: 'stripe',
+          },
+        });
+      }
 
       // Update global stats
       const globalStats = await tx.globalStats.upsert({
@@ -80,18 +105,13 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('Stats update error:', error);
     
-    // Specific error handling
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { 
-          error: 'Validation failed', 
-          details: error.issues 
-        },
+        { error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }
 
-    // Handle other errors
     return NextResponse.json(
       { 
         error: 'Internal server error',
