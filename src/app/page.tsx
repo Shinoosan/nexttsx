@@ -10,10 +10,10 @@ const LoadingScreen = () => (
 export const dynamic = 'force-dynamic';
 export const runtime = 'edge';
 
-export default function Page() {
+export default function HomePage() {
   return (
     <Suspense fallback={<LoadingScreen />}>
-      <ClientLayout />
+      <ClientLayout defaultView="home" />
     </Suspense>
   );
 }

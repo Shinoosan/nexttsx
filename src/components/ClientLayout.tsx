@@ -13,8 +13,8 @@ import { dynamicViews } from '@/lib/dynamic-views';
 type ViewType = 'home' | 'profile' | 'settings';
 
 interface ClientLayoutProps {
-  defaultView: ViewType;
-}
+    defaultView: ViewType;
+  }
 
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen">
