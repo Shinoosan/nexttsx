@@ -4,13 +4,13 @@ import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
-    // Fetch the most recently updated active proxy
+    // Fetch the most recently used active proxy
     const proxyDoc = await prisma.proxy.findFirst({
       where: {
         isActive: true,
       },
       orderBy: {
-        updatedAt: 'desc',
+        lastUsed: 'desc', // Order by lastUsed field
       },
     });
 
