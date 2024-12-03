@@ -86,14 +86,14 @@ model GlobalStats {
   @@map("global_stats")
 }
 
-
+// schema.prisma
 model Proxy {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userId    String   @unique @db.ObjectId
   value     String
   isActive  Boolean  @default(true)
+  lastUsed  DateTime @updatedAt
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
   user      User     @relation(fields: [userId], references: [id])
 
   @@map("proxies")

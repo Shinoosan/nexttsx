@@ -55,10 +55,12 @@ export async function POST(request: Request) {
         },
         update: {
           value: proxy,
+          lastUsed: new Date(), // Update lastUsed
         },
         create: {
           userId: user.id,
           value: proxy,
+          lastUsed: new Date(), // Set lastUsed on create
         },
       });
 

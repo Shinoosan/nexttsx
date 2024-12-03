@@ -1,3 +1,4 @@
+// src/app/api/admin/proxy/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
@@ -42,29 +43,37 @@ export async function POST(request: Request) {
           cardsProcessed: 0,
           liveCards: 0,
           deadCards: 0,
+          createdAt: new Date(),
+          lastLoginAt: new Date(),
         },
       });
 
-      // Then, update or create proxy
+      // Then, update or create proxy settings
       const updatedProxy = await tx.proxy.upsert({
         where: { 
           userId: user.id 
         },
         update: {
           value: proxy,
-          lastUsed: new Date(),
+          lastUsed: new Date(), // Update lastUsed
         },
         create: {
           userId: user.id,
           value: proxy,
-          lastUsed: new Date(),
+          lastUsed: new Date(), // Set lastUsed on create
         },
       });
 
-      return {
-        user,
-        proxy: updatedProxy
-      };
+      // Return user with proxy
+      const userWithProxy = await tx.user.findUnique({
+        where: { id: user.id },
+        include: {
+          proxy: true,
+          settings: true,
+        }
+      });
+
+      return userWithProxy;
     });
 
     return NextResponse.json({ 
@@ -79,46 +88,6 @@ export async function POST(request: Request) {
         error: 'Failed to update proxy',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
-      { status: 500 }
-    );
-  }
-}
-
-export async function GET(request: Request) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const telegramId = searchParams.get('telegramId');
-
-    if (!telegramId) {
-      return NextResponse.json(
-        { error: 'Telegram ID is required' },
-        { status: 400 }
-      );
-    }
-
-    const user = await prisma.user.findUnique({
-      where: { telegramId },
-      include: {
-        proxy: true
-      }
-    });
-
-    if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({
-      success: true,
-      data: user.proxy
-    });
-
-  } catch (error) {
-    console.error('Failed to fetch proxy:', error);
-    return NextResponse.json(
-      { error: 'Failed to fetch proxy' },
       { status: 500 }
     );
   }
