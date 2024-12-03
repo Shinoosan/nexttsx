@@ -76,7 +76,7 @@ model ProcessedCard {
 
 
 model GlobalStats {
-  id                    String    @id @default("global")
+  id                    String    @id @default("global") @map("_id")  // Added @map("_id")
   totalCardsProcessed   Int       @default(0)
   totalLiveCards        Int       @default(0)
   totalDeadCards        Int       @default(0)
