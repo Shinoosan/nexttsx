@@ -30,15 +30,15 @@ export default function Page() {
     // Get userData from WebAppWrapper
     const handleUserData = (event: CustomEvent<WebAppUser>) => {
       const user = event.detail;
-      // Transform WebAppUser to match the expected User interface
-      setUserData({
-        id: user.id,
+      // Transform the data to match both interfaces
+      const transformedUser = {
+        ...user,
         firstName: user.first_name,
         lastName: user.last_name,
-        username: user.username,
         languageCode: user.language_code,
-        isPremium: user.is_premium
-      } as any); // Using 'as any' temporarily to bypass type checking
+        isPremium: user.is_premium,
+      };
+      setUserData(transformedUser);
     };
 
     window.addEventListener('webappUserData', handleUserData as any);

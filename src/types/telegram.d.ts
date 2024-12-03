@@ -55,7 +55,11 @@ declare module '@twa-dev/types' {
     username?: string;
     language_code?: string;
     is_premium?: boolean;
-    // Add any other fields that might be needed
+    photoUrl?: string;
+    firstName: string;
+    lastName?: string;
+    languageCode?: string;
+    isPremium?: boolean;
   }
 }
 
