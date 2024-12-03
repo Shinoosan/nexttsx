@@ -1,8 +1,8 @@
-// src/app/api/auth/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramWebAppData } from '@/lib/telegram';
-import { z } from 'zod'; // Add zod for validation
+import { z } from 'zod';
+import { Prisma } from '@prisma/client';
 
 // Define schemas for validation
 const TelegramUserSchema = z.object({
@@ -26,7 +26,6 @@ type InitData = z.infer<typeof InitDataSchema>;
 
 export async function POST(req: Request) {
   try {
-    // 1. Parse and validate request body
     const body = await req.json().catch(() => null);
     
     if (!body?.initData) {
@@ -36,14 +35,12 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. Parse and validate init data
     let parsedInitData: InitData;
     try {
       const rawInitData = typeof body.initData === 'string' 
         ? JSON.parse(body.initData) 
         : body.initData;
         
-      // Validate against schema
       parsedInitData = InitDataSchema.parse(rawInitData);
     } catch (e) {
       console.error('Init data validation error:', e);
@@ -53,7 +50,6 @@ export async function POST(req: Request) {
       );
     }
 
-    // 3. Validate Telegram WebApp data
     const isValid = validateTelegramWebAppData(parsedInitData);
     if (!isValid) {
       return NextResponse.json(
@@ -62,10 +58,8 @@ export async function POST(req: Request) {
       );
     }
 
-    // 4. Extract user data
     const { user } = parsedInitData;
 
-    // 5. Database operation with error handling
     try {
       const dbUser = await prisma.user.upsert({
         where: {
@@ -76,7 +70,7 @@ export async function POST(req: Request) {
           firstName: user.first_name,
           lastName: user.last_name ?? null,
           photoUrl: user.photo_url ?? null,
-          lastLoginAt: new Date(), // Update last login time
+          lastLoginAt: new Date(),
         },
         create: {
           telegramId: user.id.toString(),
@@ -94,47 +88,31 @@ export async function POST(req: Request) {
         },
         include: {
           settings: true,
-          // Include other related data as needed
-          // subscriptions: true,
-          // transactions: { take: 5, orderBy: { createdAt: 'desc' } },
         }
       });
 
-      // 6. Prepare response data
       const responseData = {
         success: true,
         user: {
           ...dbUser,
           isNewUser: dbUser.createdAt.getTime() === dbUser.lastLoginAt.getTime(),
-          // Add any computed properties
           hasCompletedOnboarding: Boolean(dbUser.settings),
-          // Remove sensitive data
-          createdAt: undefined,
-          updatedAt: undefined,
         }
       };
 
-      // 7. Set session or token if needed
-      // const token = generateToken(dbUser.id);
-      
-      return NextResponse.json(responseData, {
-        status: 200,
-        headers: {
-          // 'Set-Cookie': `token=${token}; Path=/; HttpOnly; Secure; SameSite=Strict`,
-        }
-      });
+      return NextResponse.json(responseData);
 
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      
-      // Handle specific database errors
-      if (dbError.code === 'P2002') {
-        return NextResponse.json(
-          { error: 'User already exists with different credentials' },
-          { status: 409 }
-        );
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+        if (error.code === 'P2002') {
+          return NextResponse.json(
+            { error: 'User already exists with different credentials' },
+            { status: 409 }
+          );
+        }
       }
 
+      console.error('Database error:', error);
       return NextResponse.json(
         { error: 'Failed to create or update user' },
         { status: 500 }
@@ -144,14 +122,11 @@ export async function POST(req: Request) {
   } catch (error) {
     console.error('Auth error:', error);
     
-    // Log error for monitoring
-    // await logger.error('Auth error', { error });
-    
     return NextResponse.json(
       { 
         error: 'Internal server error',
         message: process.env.NODE_ENV === 'development' 
-          ? (error as Error).message 
+          ? error instanceof Error ? error.message : 'Unknown error'
           : undefined
       },
       { status: 500 }
@@ -159,7 +134,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Add GET method to check auth status
 export async function GET(req: Request) {
   try {
     const authHeader = req.headers.get('Authorization');
@@ -171,12 +145,8 @@ export async function GET(req: Request) {
       );
     }
 
-    // Validate token/session
-    // const userId = validateToken(authHeader);
-    
     return NextResponse.json({
       authenticated: true,
-      // user: await getUserData(userId)
     });
 
   } catch (error) {
