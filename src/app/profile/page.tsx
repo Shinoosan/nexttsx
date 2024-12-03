@@ -12,9 +12,7 @@ interface Stats {
 }
 
 export default function ProfilePage() {
-  const [initDataState, setInitDataState] = useState<{ user: User | null }>(
-    { user: null }
-  );
+  const initDataState = useSignal(initData.state);
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,18 +29,13 @@ export default function ProfilePage() {
       }
     };
 
-    // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined') {
-      const initDataStateFromHook = useSignal(initData.state);
-      setInitDataState(initDataStateFromHook);
-
-      if (initDataStateFromHook?.user) {
-        void fetchStats(initDataStateFromHook.user.id.toString());
-      } else {
-        setLoading(false);
-      }
+    // Check if initDataState?.user is available
+    if (initDataState?.user) {
+      void fetchStats(initDataState.user.id.toString());
+    } else {
+      setLoading(false);
     }
-  }, []);
+  }, [initDataState]);
 
   if (!initDataState?.user) {
     return (
