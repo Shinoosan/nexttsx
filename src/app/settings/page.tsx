@@ -16,12 +16,6 @@ interface ProxyCheckResponse {
   error?: string;
 }
 
-// Dynamically import Telegram Web App
-const TelegramWebApp = dynamic(
-  () => import('@twa-dev/sdk').then((mod) => mod.default),
-  { ssr: false }
-);
-
 const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
   try {
     const response = await fetch('/api/check-proxy', {
@@ -58,13 +52,11 @@ function SettingsPage() {
   useEffect(() => {
     setIsClient(true);
     
-    // Initialize Telegram Web App and get user ID
     const initTelegram = async () => {
       try {
-        const WebApp = await import('@twa-dev/sdk');
-        const initData = WebApp.default.initDataUnsafe;
-        if (initData && initData.user) {
-          setTelegramUserId(initData.user.id.toString());
+        const WebApp = (await import('@twa-dev/sdk')).default;
+        if (WebApp.initDataUnsafe?.user) {
+          setTelegramUserId(WebApp.initDataUnsafe.user.id.toString());
         } else if (process.env.NODE_ENV === 'development') {
           setTelegramUserId('1'); // Development fallback
         }
