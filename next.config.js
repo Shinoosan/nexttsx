@@ -22,7 +22,6 @@ const nextConfig = {
     return config;
   },
   experimental: {
-    appDir: true,
     serverComponentsExternalPackages: ['next/script'],
   },
 };
