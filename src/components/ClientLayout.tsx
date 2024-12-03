@@ -10,6 +10,12 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useTelegramInit } from '@/hooks/useTelegramInit';
 import { dynamicViews } from '@/lib/dynamic-views';
 
+type ViewType = 'home' | 'profile' | 'settings';
+
+interface ClientLayoutProps {
+  defaultView: ViewType;
+}
+
 const LoadingScreen = () => (
   <div className="flex items-center justify-center h-screen">
     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -18,8 +24,8 @@ const LoadingScreen = () => (
 
 const { HomeView, ProfileView, SettingsView } = dynamicViews;
 
-export function ClientLayout() {
-  const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
+const ClientLayout = ({ defaultView }: ClientLayoutProps) => {
+  const [currentView, setCurrentView] = useState<ViewType>(defaultView);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
   const { userData, isInitialized, isLoading } = useTelegramInit();
@@ -76,7 +82,7 @@ export function ClientLayout() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <SettingsView />
+            <SettingsView telegramUserId={userData?.id?.toString() || ''} />
           </motion.div>
         );
     }
@@ -133,4 +139,7 @@ export function ClientLayout() {
       <Toaster />
     </div>
   );
-}
+};
+
+export { ClientLayout };
+export type { ClientLayoutProps };
