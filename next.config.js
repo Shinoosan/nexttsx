@@ -1,5 +1,6 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import { NextConfig } from 'next';
+
+const nextConfig: NextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -19,6 +20,10 @@ const nextConfig = {
 
     return config;
   },
+  experimental: {
+    appDir: true,
+    serverComponentsExternalPackages: ['next/script'],
+  },
 };
 
-module.exports = nextConfig;
+export default nextConfig;
