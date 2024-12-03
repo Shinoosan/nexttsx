@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
-import type { InitData } from '@telegram-apps/sdk-react';
+import { WebAppInitData } from '@twa-dev/types';
 
 // Define interfaces
 interface Stats {
@@ -15,18 +15,18 @@ interface Stats {
 
 interface User {
   id: number;
-  firstName: string;
-  lastName?: string;
+  first_name: string;
+  last_name?: string;
   username?: string;
-  photoUrl?: string;
-  languageCode: string;
-  isPremium?: boolean;
+  photo_url?: string;
+  language_code: string;
+  is_premium?: boolean;
 }
 
 // Create a wrapper component for Telegram SDK
 const TelegramWrapper = dynamic(
   () => import('@telegram-apps/sdk-react').then((mod) => {
-    const TelegramComponent = ({ children }: { children: (data: InitData | null) => React.ReactNode }) => {
+    const TelegramComponent = ({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
       const signal = mod.useSignal(mod.initData.state);
       return <>{children(signal || null)}</>;
     };
@@ -35,7 +35,7 @@ const TelegramWrapper = dynamic(
   { ssr: false }
 );
 
-function ProfileContent({ initData }: { initData: InitData | null }) {
+function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -78,7 +78,7 @@ function ProfileContent({ initData }: { initData: InitData | null }) {
     return <ProfileSkeleton />;
   }
 
-  const user = initData.user;
+  const user = initData.user as User;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
