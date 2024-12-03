@@ -1,8 +1,6 @@
 // src/app/api/get-proxy/route.ts
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function GET() {
   try {
@@ -23,14 +21,12 @@ export async function GET() {
       );
     }
 
-    return NextResponse.json({ proxy: proxyDoc.proxy });
+    return NextResponse.json({ proxy: proxyDoc.value });
   } catch (error) {
     console.error('Failed to fetch proxy:', error);
     return NextResponse.json(
       { error: 'Failed to fetch proxy' },
       { status: 500 }
     );
-  } finally {
-    await prisma.$disconnect();
   }
 }
