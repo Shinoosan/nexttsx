@@ -23,7 +23,7 @@ const nextConfig: NextConfig = {
   experimental: {
     appDir: true,
     serverComponentsExternalPackages: ['next/script'],
-  },
+  } as const,
 };
 
 export default nextConfig;
