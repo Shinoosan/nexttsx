@@ -22,6 +22,21 @@ interface HomeViewProps {
 const GATES = ['Shopii', 'Zoura', 'Stripe'] as const;
 type Gate = typeof GATES[number];
 
+interface CardResult {
+  card: string;
+  status: 'LIVE' | 'DEAD';
+  message: string;
+  details: {
+    status: string;
+    gateway: string;
+    bank: string;
+    timeTaken: string;
+    cardType?: string;
+    country?: string;
+    statusMessage?: string;
+  };
+}
+
 export default function HomeView({ telegramUserId, proxy, onProcessedCountChange }: HomeViewProps) {
   const {
     inputText,
@@ -198,29 +213,12 @@ export default function HomeView({ telegramUserId, proxy, onProcessedCountChange
     });
   };
 
+  const ProcessingResult: React.FC<CardResult> = ({ card, status, details }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
 
-
-interface ProcessingResultProps {
-  card: string;
-  status: 'LIVE' | 'DEAD';
-  message: string;
-  details: {
-    status: string;
-    gateway: string;
-    bank: string;
-    timeTaken: string;
-    cardType?: string;
-    country?: string;
-    statusMessage?: string;
-  };
-}
-
-const ProcessingResult: React.FC<CardResult> = ({ card, status, details }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-
-  const copyInfo = (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevent expanding when clicking copy button
-    const info = `${card}
+    const copyInfo = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent expanding when clicking copy button
+      const info = `${card}
 Status: ${status}
 Message: ${details.statusMessage?.replace('/strong>', '') || 'N/A'}
 Gateway: ${details.gateway}
@@ -230,128 +228,128 @@ Country: ${details.country?.replace('/strong>', '') || 'N/A'}
 Time: ${details.timeTaken}
 Checked by Shino Webapp`;
 
-    navigator.clipboard.writeText(info);
-    toast({
-      variant: "info",
-      title: "Copied to clipboard",
-      description: "Card details saved",
-      duration: 2000,
-    });
-  };
+      navigator.clipboard.writeText(info);
+      toast({
+        variant: "info",
+        title: "Copied to clipboard",
+        description: "Card details saved",
+        duration: 2000,
+      });
+    };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -10 }}
-      className="mb-2"
-    >
-      <Card 
-        className={`p-4 cursor-pointer ${
-          status === 'LIVE' 
-            ? 'bg-green-50 dark:bg-green-900/20' 
-            : 'bg-red-50 dark:bg-red-900/20'
-        }`}
-        onClick={() => setIsExpanded(!isExpanded)}
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -10 }}
+        className="mb-2"
       >
-        <div className="space-y-1.5">
-          {/* Header with status, copy button, and expand icon */}
-          <div className="flex justify-between items-center">
-            <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-              status === 'LIVE'
-                ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
-                : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
-            }`}>
-              {status}
-            </div>
+        <Card 
+          className={`p-4 cursor-pointer ${
+            status === 'LIVE' 
+              ? 'bg-green-50 dark:bg-green-900/20' 
+              : 'bg-red-50 dark:bg-red-900/20'
+          }`}
+          onClick={() => setIsExpanded(!isExpanded)}
+        >
+          <div className="space-y-1.5">
+            {/* Header with status, copy button, and expand icon */}
+            <div className="flex justify-between items-center">
+              <div className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                status === 'LIVE'
+                  ? 'bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100'
+                  : 'bg-red-100 text-red-800 dark:bg-red-800 dark:text-red-100'
+              }`}>
+                {status}
+              </div>
 
-            <div className="flex items-center gap-2">
-              {/* Copy Button */}
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={copyInfo}
-                className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-              >
-                <svg 
+              <div className="flex items-center gap-2">
+                {/* Copy Button */}
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                  onClick={copyInfo}
+                  className="p-1 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                >
+                  <svg 
+                    className="w-4 h-4 text-gray-500"
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path 
+                      strokeLinecap="round" 
+                      strokeLinejoin="round" 
+                      strokeWidth={2} 
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
+                    />
+                  </svg>
+                </motion.button>
+
+                {/* Expand/Collapse icon */}
+                <motion.svg 
+                  animate={{ rotate: isExpanded ? 180 : 0 }}
                   className="w-4 h-4 text-gray-500"
                   fill="none" 
                   viewBox="0 0 24 24" 
                   stroke="currentColor"
                 >
-                  <path 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round" 
-                    strokeWidth={2} 
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" 
-                  />
-                </svg>
-              </motion.button>
-
-              {/* Expand/Collapse icon */}
-              <motion.svg 
-                animate={{ rotate: isExpanded ? 180 : 0 }}
-                className="w-4 h-4 text-gray-500"
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-              </motion.svg>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </motion.svg>
+              </div>
             </div>
-          </div>
 
-          <div className="font-mono text-sm">
-            {card}
-          </div>
-
-          {details.statusMessage && (
-            <div>
-              <span className="font-semibold">Message:</span> {details.statusMessage.replace('/strong>', '')}
+            <div className="font-mono text-sm">
+              {card}
             </div>
-          )}
 
-          <div>
-            <span className="font-semibold">Gateway:</span> {details.gateway}
-          </div>
-
-          {/* Expandable content */}
-          <AnimatePresence>
-            {isExpanded && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700"
-              >
-                {details.cardType && (
-                  <div>
-                    <span className="font-semibold">Type:</span> {details.cardType.replace('/strong>', '')}
-                  </div>
-                )}
-
-                <div>
-                  <span className="font-semibold">Bank:</span> {details.bank.replace('/strong>', '')}
-                </div>
-
-                {details.country && (
-                  <div>
-                    <span className="font-semibold">Country:</span> {details.country.replace('/strong>', '')}
-                  </div>
-                )}
-
-                <div>
-                  <span className="font-semibold">Time:</span> {details.timeTaken}
-                </div>
-              </motion.div>
+            {details.statusMessage && (
+              <div>
+                <span className="font-semibold">Message:</span> {details.statusMessage.replace('/strong>', '')}
+              </div>
             )}
-          </AnimatePresence>
-        </div>
-      </Card>
-    </motion.div>
-  );
-};
+
+            <div>
+              <span className="font-semibold">Gateway:</span> {details.gateway}
+            </div>
+
+            {/* Expandable content */}
+            <AnimatePresence>
+              {isExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="space-y-1 pt-2 border-t border-gray-200 dark:border-gray-700"
+                >
+                  {details.cardType && (
+                    <div>
+                      <span className="font-semibold">Type:</span> {details.cardType.replace('/strong>', '')}
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="font-semibold">Bank:</span> {details.bank.replace('/strong>', '')}
+                  </div>
+
+                  {details.country && (
+                    <div>
+                      <span className="font-semibold">Country:</span> {details.country.replace('/strong>', '')}
+                    </div>
+                  )}
+
+                  <div>
+                    <span className="font-semibold">Time:</span> {details.timeTaken}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </Card>
+      </motion.div>
+    );
+  };
 
   return (
     <motion.div
