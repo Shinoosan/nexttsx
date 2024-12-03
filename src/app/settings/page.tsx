@@ -46,21 +46,16 @@ export default function SettingsPage() {
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
   const [proxyIp, setProxyIp] = useState<string>('');
+  const initDataState = useSignal(initData.state);
 
   useEffect(() => {
     // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined') {
-      const initDataState = useSignal(initData.state);
-
-      // Set initial proxy value
-      if (initDataState?.user && proxy) {
-        setProxyInput(proxy);
-      }
+    if (typeof window !== 'undefined' && initDataState?.user && proxy) {
+      setProxyInput(proxy);
     }
-  }, [proxy]);
+  }, [proxy, initDataState]);
 
   const checkAndSaveProxy = async () => {
-    const initDataState = useSignal(initData.state);
     const telegramId = initDataState?.user?.id?.toString();
 
     let effectiveTelegramId = telegramId;
@@ -111,10 +106,7 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
-    const initDataState = useSignal(initData.state);
-    const telegramId = initDataState?.user?.id?.toString();
-
-    if (!telegramId) {
+    if (!initDataState?.user?.id) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -124,7 +116,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await updateUserProxy(telegramId, '');
+      await updateUserProxy(initDataState.user.id.toString(), '');
       setProxyInput('');
       setProxyIp('');
       toast({
