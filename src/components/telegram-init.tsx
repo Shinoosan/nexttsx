@@ -5,42 +5,13 @@ import { useEffect } from 'react';
 import { useCardStore } from '@/store/card-store';
 import { toast } from '@/components/ui/use-toast';
 import WebApp from '@twa-dev/sdk';
-
-interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
-}
-
-interface TelegramWebAppUser {
-  id: number;
-  is_bot?: boolean;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
-}
-
-interface WebAppInitData {
-  query_id?: string;
-  user?: TelegramWebAppUser;
-  auth_date?: number;
-  hash?: string;
-}
-
-
+import type { WebAppUser } from '@twa-dev/types';
 
 export function TelegramInit() {
   const { setTelegramUser } = useCardStore();
 
   useEffect(() => {
-    const saveUserData = async (user: TelegramWebAppUser) => {
+    const saveUserData = async (user: WebAppUser) => {
       try {
         const response = await fetch('/api/telegram-user', {
           method: 'POST',
@@ -73,7 +44,7 @@ export function TelegramInit() {
       try {
         // Development mode handling
         if (process.env.NODE_ENV === 'development') {
-          const mockUser = {
+          const mockUser: WebAppUser = {
             id: 1,
             first_name: 'Dev',
             username: 'dev_user',
@@ -84,19 +55,12 @@ export function TelegramInit() {
         }
 
         // Production mode handling
-        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
-          const tg = window.Telegram.WebApp;
-          tg.ready();
-          tg.expand();
-
-          const user = tg.initDataUnsafe.user;
-          if (!user) {
-            throw new Error('No Telegram user data available');
-          }
-
-          await saveUserData(user);
+        if (WebApp.initDataUnsafe.user) {
+          WebApp.ready();
+          WebApp.expand();
+          await saveUserData(WebApp.initDataUnsafe.user);
         } else {
-          throw new Error('Telegram WebApp is not available');
+          throw new Error('No Telegram user data available');
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : 'An unknown error occurred';
@@ -115,5 +79,3 @@ export function TelegramInit() {
 
   return null;
 }
-
-export type { TelegramUser, TelegramWebAppUser, WebAppInitData };
