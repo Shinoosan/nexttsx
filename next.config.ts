@@ -2,8 +2,11 @@ import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Add this to disable SSR
-  runtime: 'edge',
+  // Configure for client-side rendering
+  output: 'export',  // This enables static HTML export
+  images: {
+    unoptimized: true, // Required for static export
+  },
   webpack: (config, { isServer }) => {
     if (!isServer) {
       config.resolve.fallback = {
@@ -22,7 +25,6 @@ const nextConfig: NextConfig = {
     return config;
   },
   experimental: {
-    // Remove appDir as it's deprecated in Next.js 14
     serverComponentsExternalPackages: ['next/script']
   }
 } as const;
