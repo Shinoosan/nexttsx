@@ -61,10 +61,12 @@ export default function SettingsPage() {
   const checkAndSaveProxy = async () => {
     const telegramId = initDataState?.user?.id?.toString();
 
+    let effectiveTelegramId = telegramId;
+
     // If no telegram ID and in development, use a default
-    if (!telegramId) {
+    if (!effectiveTelegramId) {
       if (process.env.NODE_ENV === 'development') {
-        telegramId = '1';
+        effectiveTelegramId = '1';
       } else {
         toast({
           title: 'Error',
@@ -81,7 +83,7 @@ export default function SettingsPage() {
 
       if (proxyResult.isLive) {
         // Save proxy to database
-        await updateUserProxy(telegramId || '1', proxyInput);
+        await updateUserProxy(effectiveTelegramId, proxyInput);
         setProxyIp(proxyResult.ip || '');
         
         toast({
