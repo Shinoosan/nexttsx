@@ -1,27 +1,38 @@
-'use client'
+'use client';
 
-import React from 'react'
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import React from 'react';
+import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 
 interface ProxyContextType {
-  proxy: string | null
-  setProxy: (proxy: string | null) => void
-  updateUserProxy: (telegramId: string, proxy: string) => Promise<void>
-  saveProxy?: (newProxy: string) => void // Added for compatibility
+  proxy: string | null;
+  setProxy: (proxy: string | null) => void;
+  updateUserProxy: (telegramId: string, proxy: string) => Promise<void>;
+  saveProxy: (newProxy: string) => void;
+  isLoading: boolean;
+  error: string | null;
 }
 
-const ProxyContext = createContext<ProxyContextType>({
-  proxy: process.env.NEXT_PUBLIC_DEFAULT_PROXY || null,
-  setProxy: () => {},
-  updateUserProxy: async () => {},
-})
+const ProxyContext = createContext<ProxyContextType | undefined>(undefined);
 
 export function ProxyProvider({ children }: { children: ReactNode }) {
   const [proxy, setProxy] = useState<string | null>(
     process.env.NEXT_PUBLIC_DEFAULT_PROXY || null
-  )
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Load saved proxy from localStorage on mount
+  useEffect(() => {
+    const savedProxy = localStorage.getItem('proxy');
+    if (savedProxy) {
+      setProxy(savedProxy);
+    }
+  }, []);
 
   const updateUserProxy = async (telegramId: string, newProxy: string) => {
+    setIsLoading(true);
+    setError(null);
+
     try {
       const response = await fetch('/api/user/proxy', {
         method: 'POST',
@@ -32,36 +43,78 @@ export function ProxyProvider({ children }: { children: ReactNode }) {
           telegramId,
           proxy: newProxy,
         }),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error('Failed to update proxy')
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update proxy');
       }
 
-      setProxy(newProxy)
+      setProxy(newProxy);
+      localStorage.setItem('proxy', newProxy);
     } catch (error) {
-      console.error('Error updating proxy:', error)
-      throw error
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      setError(errorMessage);
+      console.error('Error updating proxy:', error);
+      throw error;
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
 
-  // Added for compatibility with your settings page
   const saveProxy = (newProxy: string) => {
-    setProxy(newProxy)
-    localStorage.setItem('proxy', newProxy)
-  }
+    try {
+      setProxy(newProxy);
+      localStorage.setItem('proxy', newProxy);
+    } catch (error) {
+      console.error('Error saving proxy to localStorage:', error);
+      setError('Failed to save proxy settings');
+    }
+  };
 
-  return (
-    <ProxyContext.Provider value={{ proxy, setProxy, updateUserProxy, saveProxy }}>
-      {children}
-    </ProxyContext.Provider>
-  )
+  const value = {
+    proxy,
+    setProxy,
+    updateUserProxy,
+    saveProxy,
+    isLoading,
+    error,
+  };
+
+  return <ProxyContext.Provider value={value}>{children}</ProxyContext.Provider>;
 }
 
 export function useProxy(): ProxyContextType {
-  const context = useContext(ProxyContext)
-  if (!context) {
-    throw new Error('useProxy must be used within a ProxyProvider')
+  const context = useContext(ProxyContext);
+  if (context === undefined) {
+    throw new Error('useProxy must be used within a ProxyProvider');
   }
-  return context
+  return context;
 }
+
+// Example usage in a component:
+/*
+'use client';
+
+import { useProxy } from '@/hooks/use-proxy';
+
+export function ProxySettings({ telegramId }: { telegramId: string }) {
+  const { proxy, updateUserProxy, isLoading, error } = useProxy();
+
+  const handleProxyUpdate = async (newProxy: string) => {
+    try {
+      await updateUserProxy(telegramId, newProxy);
+    } catch (error) {
+      // Handle error
+    }
+  };
+
+  return (
+    <div>
+      {isLoading && <div>Updating proxy...</div>}
+      {error && <div className="text-red-500">{error}</div>}
+      {/* Your proxy settings UI *//*}
+    </div>
+  );
+}
+*/
