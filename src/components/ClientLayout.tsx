@@ -1,45 +1,50 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+// src/components/ClientLayout.tsx
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { toast } from '@/components/ui/use-toast';
-import { ThemeToggle } from '@/components/theme-switcher';
-import { Toaster } from '@/components/ui/toaster';
-import { Home, Settings, User } from 'lucide-react';
-import { useProxy } from '@/hooks/use-proxy';
+import { User as TelegramUser } from '@telegram-apps/sdk';
+import { useProxy } from '@/hooks/useProxy';
 import { useTelegramInit } from '@/hooks/useTelegramInit';
-import { dynamicViews } from '@/lib/dynamic-views';
+import { useToast } from '@/components/ui/use-toast';
+import { LoadingScreen } from '@/components/LoadingScreen';
+import { Navigation } from '@/components/Navigation';
+import HomeView from '@/components/views/home-view';
+import ProfileView from '@/components/views/profile-view';
+import SettingsView from '@/components/views/settings-view';
 
 type ViewType = 'home' | 'profile' | 'settings';
 
 interface ClientLayoutProps {
-    defaultView: ViewType;
-  }
+  defaultView: ViewType;
+}
 
-const LoadingScreen = () => (
-  <div className="flex items-center justify-center h-screen">
-    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-  </div>
-);
-
-const { HomeView, ProfileView, SettingsView } = dynamicViews;
-
-const ClientLayout = ({ defaultView }: ClientLayoutProps) => {
+export function ClientLayout({ defaultView }: ClientLayoutProps) {
   const [currentView, setCurrentView] = useState<ViewType>(defaultView);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
   const { userData, isInitialized, isLoading } = useTelegramInit();
+  const { toast } = useToast();
 
-  const showToast = (message: string, type?: 'error' | 'success') => {
-    toast({
-      title: message,
-      variant: type === 'error' ? 'destructive' : 'default'
-    });
-  };
-
-  if (isLoading || !isInitialized) {
+  if (isLoading) {
     return <LoadingScreen />;
   }
+
+  if (!isInitialized) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <p className="text-center text-red-500">
+          Failed to initialize. Please try again.
+        </p>
+      </div>
+    );
+  }
+
+  const showToast = (title: string, description?: string, variant: 'default' | 'destructive' = 'default') => {
+    toast({
+      title,
+      description,
+      variant,
+    });
+  };
 
   const renderView = () => {
     switch (currentView) {
@@ -60,7 +65,7 @@ const ClientLayout = ({ defaultView }: ClientLayoutProps) => {
           </motion.div>
         );
       case 'profile':
-        return (
+        return userData ? (
           <motion.div
             key="profile"
             initial={{ opacity: 0 }}
@@ -68,12 +73,12 @@ const ClientLayout = ({ defaultView }: ClientLayoutProps) => {
             exit={{ opacity: 0 }}
           >
             <ProfileView
-              telegramUserId={userData?.id?.toString() || ''}
+              telegramUserId={userData.id.toString()}
               processedCount={processedCount}
               userData={userData}
             />
           </motion.div>
-        );
+        ) : null;
       case 'settings':
         return (
           <motion.div
@@ -85,61 +90,23 @@ const ClientLayout = ({ defaultView }: ClientLayoutProps) => {
             <SettingsView telegramUserId={userData?.id?.toString() || ''} />
           </motion.div>
         );
+      default:
+        return null;
     }
   };
 
   return (
-    <div className="min-h-[100dvh] w-full">
-      <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950 transition-colors duration-300">
-        <header className="fixed top-0 right-0 p-4 z-50">
-          <ThemeToggle />
-        </header>
-
-        <main className="pb-20 pt-4">
-          <AnimatePresence mode="wait">
-            {renderView()}
-          </AnimatePresence>
-        </main>
-
-        <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
-          <div className="flex justify-around items-center h-16 max-w-md mx-auto">
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setCurrentView('home')}
-              className={`p-2 rounded-lg transition-colors ${
-                currentView === 'home' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              <Home className="w-6 h-6" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setCurrentView('profile')}
-              className={`p-2 rounded-lg transition-colors ${
-                currentView === 'profile' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              <User className="w-6 h-6" />
-            </motion.button>
-            <motion.button
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-              onClick={() => setCurrentView('settings')}
-              className={`p-2 rounded-lg transition-colors ${
-                currentView === 'settings' ? 'text-primary' : 'text-muted-foreground'
-              }`}
-            >
-              <Settings className="w-6 h-6" />
-            </motion.button>
-          </div>
-        </nav>
-      </div>
-      <Toaster />
+    <div className="flex flex-col min-h-screen">
+      <main className="flex-1">
+        <AnimatePresence mode="wait">
+          {renderView()}
+        </AnimatePresence>
+      </main>
+      <Navigation
+        currentView={currentView}
+        onViewChange={setCurrentView}
+        processedCount={processedCount}
+      />
     </div>
   );
-};
-
-export { ClientLayout };
-export type { ClientLayoutProps };
+}

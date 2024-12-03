@@ -7,6 +7,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { User as TelegramUser } from '@telegram-apps/sdk';
 
 // Types
 interface Stats {
@@ -16,21 +17,10 @@ interface Stats {
   }
 }
 
-interface TelegramUser {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  language_code?: string;
-  is_premium?: boolean;
-  photo_url?: string;
-}
-
-
 interface ProfileViewProps {
   telegramUserId: string;
   processedCount: number;
-  userData: TelegramUser;  // Using the correct TelegramUser interface
+  userData: TelegramUser;
 }
 
 export default function ProfileView({ telegramUserId, processedCount, userData }: ProfileViewProps) {
@@ -75,11 +65,11 @@ export default function ProfileView({ telegramUserId, processedCount, userData }
         <div className="space-y-6">
           <div className="flex items-center gap-4">
             <Avatar className="w-16 h-16">
-              {userData.photo_url ? (
+              {userData.photoUrl ? (
                 <div className="relative w-full h-full">
                   <Image
-                    src={userData.photo_url}
-                    alt={userData.username || userData.first_name}
+                    src={userData.photoUrl}
+                    alt={userData.username || userData.firstName}
                     fill
                     className="object-cover rounded-full"
                     sizes="(max-width: 64px) 100vw, 64px"
@@ -87,22 +77,22 @@ export default function ProfileView({ telegramUserId, processedCount, userData }
                 </div>
               ) : (
                 <AvatarFallback>
-                  {userData.first_name[0]}
-                  {userData.last_name?.[0]}
+                  {userData.firstName[0]}
+                  {userData.lastName?.[0]}
                 </AvatarFallback>
               )}
             </Avatar>
             
             <div>
               <h2 className="text-xl font-semibold">
-                {userData.first_name} {userData.last_name}
+                {userData.firstName} {userData.lastName}
               </h2>
               {userData.username && (
                 <p className="text-muted-foreground">
                   @{userData.username}
                 </p>
               )}
-              {userData.is_premium && (
+              {userData.isPremium && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
                   Premium
                 </span>
@@ -111,7 +101,7 @@ export default function ProfileView({ telegramUserId, processedCount, userData }
           </div>
 
           <StatsCard title="Your Stats">
-            <p>Language: {userData.language_code || 'Not specified'}</p>
+            <p>Language: {userData.languageCode || 'Not specified'}</p>
             <p>ID: {userData.id}</p>
             <p>Cards Processed: {processedCount}</p>
           </StatsCard>
@@ -128,7 +118,7 @@ export default function ProfileView({ telegramUserId, processedCount, userData }
   );
 }
 
-// Helper Components
+// Helper Components remain the same
 const ProfileSkeleton = () => (
   <div className="p-4">
     <Card className="p-6">
