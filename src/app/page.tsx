@@ -8,23 +8,59 @@ import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
 import '@/app/globals.css';
-import HomeView from '@/components/views/home-view';
-import ProfileView from '@/components/views/profile-view';
-import SettingsView from '@/components/views/settings-view';
-import WebApp from '@twa-dev/sdk';
-import type { WebAppUser } from '@twa-dev/types';
+import dynamic from 'next/dynamic';
 
-export default function Page() {
+// Dynamically import views
+const HomeView = dynamic(() => import('@/components/views/home-view'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>
+});
+
+const ProfileView = dynamic(() => import('@/components/views/profile-view'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>
+});
+
+const SettingsView = dynamic(() => import('@/components/views/settings-view'), {
+  ssr: false,
+  loading: () => <div>Loading...</div>
+});
+
+// Type for Telegram Web App User
+interface WebAppUser {
+  id: number;
+  is_bot?: boolean;
+  first_name: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  is_premium?: boolean;
+}
+
+const Page = () => {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
   const [userData, setUserData] = useState<WebAppUser | null>(null);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
-    const initData = WebApp.initDataUnsafe;
-    if (initData && initData.user) {
-      setUserData(initData.user);
-    }
+    setIsClient(true);
+    
+    // Initialize Telegram Web App
+    const initializeTelegramWebApp = async () => {
+      try {
+        const WebApp = (await import('@twa-dev/sdk')).default;
+        const initData = WebApp.initDataUnsafe;
+        if (initData && initData.user) {
+          setUserData(initData.user);
+        }
+      } catch (error) {
+        console.error('Error initializing Telegram Web App:', error);
+      }
+    };
+
+    void initializeTelegramWebApp();
   }, []);
 
   const showToast = (message: string, type?: 'error' | 'success') => {
@@ -33,6 +69,10 @@ export default function Page() {
       variant: type === 'error' ? 'destructive' : 'default'
     });
   };
+
+  if (!isClient) {
+    return null; // or return a loading spinner
+  }
 
   return (
     <div className="min-h-[100dvh] w-full">
@@ -79,4 +119,9 @@ export default function Page() {
       <Toaster />
     </div>
   );
-}
+};
+
+// Export with dynamic to disable SSR
+export default dynamic(() => Promise.resolve(Page), {
+  ssr: false
+});

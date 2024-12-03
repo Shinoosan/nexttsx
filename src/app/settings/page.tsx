@@ -8,13 +8,19 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-
+import dynamic from 'next/dynamic';
 
 interface ProxyCheckResponse {
   isLive: boolean;
   ip?: string;
   error?: string;
 }
+
+// Dynamically import Telegram Web App
+const TelegramWebApp = dynamic(
+  () => import('@twa-dev/sdk').then((mod) => mod.default),
+  { ssr: false }
+);
 
 const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
   try {
@@ -40,12 +46,35 @@ const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
   }
 };
 
-export default function SettingsPage() {
+function SettingsPage() {
   const { proxy, updateUserProxy } = useProxy();
   const [proxyInput, setProxyInput] = useState(proxy || '');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
   const [proxyIp, setProxyIp] = useState<string>('');
+  const [telegramUserId, setTelegramUserId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    setIsClient(true);
+    
+    // Initialize Telegram Web App and get user ID
+    const initTelegram = async () => {
+      try {
+        const WebApp = await import('@twa-dev/sdk');
+        const initData = WebApp.default.initDataUnsafe;
+        if (initData && initData.user) {
+          setTelegramUserId(initData.user.id.toString());
+        } else if (process.env.NODE_ENV === 'development') {
+          setTelegramUserId('1'); // Development fallback
+        }
+      } catch (error) {
+        console.error('Error initializing Telegram Web App:', error);
+      }
+    };
+
+    void initTelegram();
+  }, []);
 
   useEffect(() => {
     if (proxy) {
@@ -54,9 +83,7 @@ export default function SettingsPage() {
   }, [proxy]);
 
   const checkAndSaveProxy = async () => {
-    const effectiveTelegramId = process.env.NODE_ENV === 'development' ? '1' : null;
-  
-    if (!effectiveTelegramId) {
+    if (!telegramUserId) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -64,16 +91,15 @@ export default function SettingsPage() {
       });
       return;
     }
-  
+
     setIsChecking(true);
     try {
       const proxyResult = await checkProxy(proxyInput);
-  
+
       if (proxyResult.isLive) {
-        // Save proxy to database
-        await updateUserProxy(effectiveTelegramId, proxyInput);
+        await updateUserProxy(telegramUserId, proxyInput);
         setProxyIp(proxyResult.ip || '');
-  
+
         toast({
           title: 'Success',
           description: `Proxy is live (IP: ${proxyResult.ip})`,
@@ -95,11 +121,9 @@ export default function SettingsPage() {
       setIsChecking(false);
     }
   };
-  
+
   const handleClearProxy = async () => {
-    const effectiveTelegramId = process.env.NODE_ENV === 'development' ? '1' : null;
-  
-    if (!effectiveTelegramId) {
+    if (!telegramUserId) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -107,9 +131,9 @@ export default function SettingsPage() {
       });
       return;
     }
-  
+
     try {
-      await updateUserProxy(effectiveTelegramId, '');
+      await updateUserProxy(telegramUserId, '');
       setProxyInput('');
       setProxyIp('');
       toast({
@@ -129,6 +153,14 @@ export default function SettingsPage() {
     const parts = proxy.split(':');
     return parts.length === 4;
   };
+
+  if (!isClient) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
@@ -220,3 +252,8 @@ export default function SettingsPage() {
     </div>
   );
 }
+
+// Export with dynamic to disable SSR
+export default dynamic(() => Promise.resolve(SettingsPage), {
+  ssr: false
+});
