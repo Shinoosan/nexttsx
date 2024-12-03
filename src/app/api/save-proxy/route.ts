@@ -1,42 +1,47 @@
 // src/app/api/save-proxy/route.ts
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';  // Use the shared prisma instance
+import { prisma } from '@/lib/prisma';
 
 export async function POST(request: Request) {
   try {
-    const { proxy } = await request.json();
+    const { proxy, userId } = await request.json();
 
-    // Validate proxy string
-    if (!proxy || typeof proxy !== 'string') {
+    if (!proxy || !userId) {
       return NextResponse.json(
-        { message: 'Valid proxy string is required' },
+        { error: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Create or update the proxy
-    const updatedProxy = await prisma.proxy.upsert({
-      where: { 
-        proxy: proxy // Using proxy as unique identifier
+    // Update existing proxy
+    const updatedProxy = await prisma.proxy.updateMany({
+      where: {
+        userId,
+        value: proxy,
       },
-      update: { 
+      data: {
         isActive: true,
-        updatedAt: new Date()
-      },
-      create: { 
-        proxy: proxy,
-        isActive: true
+        lastUsed: new Date(),
       },
     });
 
-    return NextResponse.json({ 
-      success: true, 
-      proxy: updatedProxy 
-    });
+    // If no existing proxy found, create a new one
+    if (updatedProxy.count === 0) {
+      await prisma.proxy.create({
+        data: {
+          userId,
+          value: proxy,
+          isActive: true,
+          lastUsed: new Date(),
+        },
+      });
+    }
+
+    return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Failed to save proxy:', error);
     return NextResponse.json(
-      { message: 'Failed to save proxy' },
+      { error: 'Failed to save proxy' },
       { status: 500 }
     );
   }
