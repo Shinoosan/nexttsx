@@ -28,8 +28,17 @@ export default function Page() {
 
   useEffect(() => {
     // Get userData from WebAppWrapper
-    const handleUserData = (data: WebAppUser) => {
-      setUserData(data);
+    const handleUserData = (event: CustomEvent<WebAppUser>) => {
+      const user = event.detail;
+      // Transform WebAppUser to match the expected User interface
+      setUserData({
+        id: user.id,
+        firstName: user.first_name,
+        lastName: user.last_name,
+        username: user.username,
+        languageCode: user.language_code,
+        isPremium: user.is_premium
+      } as any); // Using 'as any' temporarily to bypass type checking
     };
 
     window.addEventListener('webappUserData', handleUserData as any);

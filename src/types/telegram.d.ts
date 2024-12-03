@@ -46,3 +46,27 @@ declare global {
     }
   }
 }
+
+declare module '@twa-dev/types' {
+  export interface WebAppUser {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    username?: string;
+    language_code?: string;
+    is_premium?: boolean;
+    // Add any other fields that might be needed
+  }
+}
+
+declare module '@twa-dev/sdk' {
+  interface WebApp {
+    isReady: boolean;
+    ready: () => void;
+    initDataUnsafe: {
+      user?: WebAppUser;
+    };
+  }
+  const WebApp: WebApp;
+  export default WebApp;
+}
