@@ -6,6 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
 import type { WebAppInitData } from '@twa-dev/types';
+import WebApp from '@twa-dev/sdk';
 
 // Define interfaces
 interface Stats {
@@ -13,35 +14,14 @@ interface Stats {
   totalUsers: number;
 }
 
-interface User {
-  id: number;
-  first_name: string;
-  last_name?: string;
-  username?: string;
-  photo_url?: string;
-  language_code: string;
-  is_premium?: boolean;
-}
-
 // Create a wrapper component for Telegram SDK
 const TelegramWrapper = dynamic(
-  () => import('@telegram-apps/sdk-react').then((mod) => {
-    const TelegramComponent = ({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
-      const signal = mod.useSignal(mod.initData.state);
-      // Add missing properties to match WebAppInitData
-      const webAppData: WebAppInitData | null = signal ? {
-        ...signal,
-        auth_date: Math.floor(Date.now() / 1000),
-        signature: signal.hash || ''
-      } : null;
-      return <>{children(webAppData)}</>;
-    };
-    return TelegramComponent;
+  () => Promise.resolve(({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
+    const initData = WebApp.initData ? JSON.parse(atob(WebApp.initData)) : null;
+    return <>{children(initData)}</>;
   }),
   { ssr: false }
 );
-
-// Rest of your code remains the same...
 
 function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
   const [stats, setStats] = useState<Stats | null>(null);
@@ -86,7 +66,7 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
     return <ProfileSkeleton />;
   }
 
-  const user = initData.user as User;
+  const user = initData.user;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
