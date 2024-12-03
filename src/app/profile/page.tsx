@@ -30,8 +30,9 @@ export default function ProfilePage() {
     };
 
     // Check if initDataState?.user is available
-    if (initDataState?.user) {
-      void fetchStats(initDataState.user.id.toString());
+    const user = initDataState?.user;
+    if (user) {
+      void fetchStats(user.id.toString());
     } else {
       setLoading(false);
     }

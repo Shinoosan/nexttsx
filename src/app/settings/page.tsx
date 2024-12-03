@@ -25,7 +25,7 @@ const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
     });
 
     const data: ProxyCheckResponse = await response.json();
-    
+
     if (!response.ok) {
       throw new Error(data.error || 'Failed to check proxy');
     }
@@ -33,24 +33,23 @@ const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
     return data;
   } catch (error) {
     console.error('Error checking proxy:', error);
-    return { 
-      isLive: false, 
-      error: error instanceof Error ? error.message : 'Unknown error occurred' 
+    return {
+      isLive: false,
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     };
   }
 };
 
 export default function SettingsPage() {
   const { proxy, updateUserProxy } = useProxy();
-  const [proxyInput, setProxyInput] = useState('');
+  const [proxyInput, setProxyInput] = useState(proxy || '');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
   const [proxyIp, setProxyIp] = useState<string>('');
   const initDataState = useSignal(initData.state);
 
   useEffect(() => {
-    // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined' && initDataState?.user && proxy) {
+    if (initDataState?.user && proxy) {
       setProxyInput(proxy);
     }
   }, [proxy, initDataState]);
@@ -82,7 +81,7 @@ export default function SettingsPage() {
         // Save proxy to database
         await updateUserProxy(effectiveTelegramId, proxyInput);
         setProxyIp(proxyResult.ip || '');
-        
+
         toast({
           title: 'Success',
           description: `Proxy is live (IP: ${proxyResult.ip})`,
@@ -106,7 +105,10 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
-    if (!initDataState?.user?.id) {
+    const initDataState = useSignal(initData.state);
+    const telegramId = initDataState?.user?.id?.toString();
+
+    if (!telegramId) {
       toast({
         title: 'Error',
         description: 'Telegram user ID not found',
@@ -116,7 +118,7 @@ export default function SettingsPage() {
     }
 
     try {
-      await updateUserProxy(initDataState.user.id.toString(), '');
+      await updateUserProxy(telegramId, '');
       setProxyInput('');
       setProxyIp('');
       toast({

@@ -21,9 +21,9 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined' && WebApp.initDataUnsafe.user) {
-      setUserData(WebApp.initDataUnsafe.user);
+    const initData = WebApp.initDataUnsafe;
+    if (initData && initData.user) {
+      setUserData(initData.user);
     }
   }, []);
 
