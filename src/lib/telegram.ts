@@ -15,6 +15,8 @@ interface TelegramWebAppData {
   hash: string;
 }
 
+type ThemeParams = 'bg_color' | 'secondary_bg_color' | `#${string}`;
+
 // Get current user data from WebApp
 export const getCurrentUser = () => {
   return WebApp.initDataUnsafe?.user;
@@ -125,11 +127,11 @@ export const expandWebApp = () => {
   WebApp.expand();
 };
 
-export const setBackgroundColor = (color: string) => {
+export const setBackgroundColor = (color: ThemeParams) => {
   WebApp.setBackgroundColor(color);
 };
 
-export const setHeaderColor = (color: string) => {
+export const setHeaderColor = (color: ThemeParams) => {
   WebApp.setHeaderColor(color);
 };
 
