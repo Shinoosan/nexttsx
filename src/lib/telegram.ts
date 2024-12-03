@@ -1,5 +1,5 @@
 // src/lib/telegram.ts
-import { WebApp } from '@twa-dev/sdk';
+import WebApp from '@twa-dev/sdk';
 import crypto from 'crypto';
 
 interface TelegramWebAppData {
