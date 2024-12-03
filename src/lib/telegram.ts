@@ -15,10 +15,13 @@ interface TelegramWebAppData {
   hash: string;
 }
 
+let isWebAppInitialized = false;
+
 // Initialize WebApp
 export const initTelegramApp = () => {
-  if (!WebApp.isInitialized) {
+  if (!isWebAppInitialized) {
     WebApp.init();
+    isWebAppInitialized = true;
   }
   return WebApp;
 };
@@ -31,36 +34,47 @@ export const getCurrentUser = () => {
 
 // Validate Telegram WebApp data
 export const validateTelegramWebAppData = (data: TelegramWebAppData): boolean => {
-  const botToken = process.env.NEXT_PUBLIC_BOT_TOKEN;
-  
-  if (!botToken) {
-    console.error('Bot token not found');
+  try {
+    const botToken = process.env.NEXT_PUBLIC_BOT_TOKEN;
+    
+    if (!botToken) {
+      console.error('Bot token not found');
+      return false;
+    }
+
+    // Remove hash from the check
+    const { hash, ...dataToCheck } = data;
+
+    // Create a sorted array of key=value strings
+    const checkString = Object.entries(dataToCheck)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([key, value]) => {
+        // Handle nested objects (like user object)
+        if (typeof value === 'object') {
+          return `${key}=${JSON.stringify(value)}`;
+        }
+        return `${key}=${value}`;
+      })
+      .join('\n');
+
+    // Create a secret key from the bot token
+    const secretKey = crypto
+      .createHash('sha256')
+      .update(botToken)
+      .digest();
+
+    // Calculate HMAC-SHA256 signature
+    const signature = crypto
+      .createHmac('sha256', secretKey)
+      .update(checkString)
+      .digest('hex');
+
+    // Compare the calculated signature with the provided hash
+    return signature === hash;
+  } catch (error) {
+    console.error('Error validating Telegram data:', error);
     return false;
   }
-
-  // Remove hash from the check
-  const { hash, ...dataToCheck } = data;
-
-  // Create a sorted array of key=value strings
-  const checkString = Object.entries(dataToCheck)
-    .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-
-  // Create a secret key from the bot token
-  const secretKey = crypto
-    .createHash('sha256')
-    .update(botToken)
-    .digest();
-
-  // Calculate HMAC-SHA256 signature
-  const signature = crypto
-    .createHmac('sha256', secretKey)
-    .update(checkString)
-    .digest('hex');
-
-  // Compare the calculated signature with the provided hash
-  return signature === hash;
 };
 
 // API calls for bot interactions
@@ -124,4 +138,30 @@ export const showAlert = (message: string) => {
 export const showConfirm = (message: string) => {
   const webApp = initTelegramApp();
   return webApp.showConfirm(message);
+};
+
+// Additional helper methods
+export const expandWebApp = () => {
+  const webApp = initTelegramApp();
+  webApp.expand();
+};
+
+export const setBackgroundColor = (color: string) => {
+  const webApp = initTelegramApp();
+  webApp.setBackgroundColor(color);
+};
+
+export const setHeaderColor = (color: string) => {
+  const webApp = initTelegramApp();
+  webApp.setHeaderColor(color);
+};
+
+export const enableClosingConfirmation = () => {
+  const webApp = initTelegramApp();
+  webApp.enableClosingConfirmation();
+};
+
+export const disableClosingConfirmation = () => {
+  const webApp = initTelegramApp();
+  webApp.disableClosingConfirmation();
 };
