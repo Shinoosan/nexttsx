@@ -1,10 +1,10 @@
 // src/components/telegram-init.tsx
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import WebApp from '@twa-dev/sdk';
+import { useEffect } from 'react';
+import { useCardStore } from '@/store/card-store';
 import { toast } from '@/components/ui/use-toast';
-import { useRouter } from 'next/navigation';
+import WebApp from '@twa-dev/sdk';
 
 interface TelegramUser {
   id: number;
@@ -34,118 +34,84 @@ interface WebAppInitData {
   hash?: string;
 }
 
-declare global {
-  interface Window {
-    Telegram?: {
-      WebApp: typeof WebApp & {
-        initDataUnsafe: WebAppInitData;
-        ready: () => void;
-        expand: () => void;
-        close: () => void;
-        MainButton: {
-          text: string;
-          show: () => void;
-          hide: () => void;
-          onClick: (callback: () => void) => void;
-        };
-      };
-    };
-  }
-}
+
 
 export function TelegramInit() {
-  const [isInitializing, setIsInitializing] = useState(true);
-  const router = useRouter();
-
-  const saveUserData = async (user: TelegramWebAppUser) => {
-    try {
-      const response = await fetch('/api/telegram-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(user),
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save user data');
-      }
-
-      const userData = await response.json();
-      console.log('Telegram user saved:', userData);
-
-      toast({
-        title: 'Welcome!',
-        description: `Hello ${userData.firstName}!`,
-        variant: 'default',
-      });
-
-      return userData;
-    } catch (error) {
-      console.error('Error saving user:', error);
-      throw error;
-    }
-  };
-
-  const handleMockUser = useCallback(async () => {
-    const mockUser = {
-      id: 1,
-      first_name: 'Dev',
-      username: 'dev_user',
-      is_premium: true,
-    };
-    console.log('Using mock user in development:', mockUser);
-    return await saveUserData(mockUser);
-  }, []);
-
-  const handleError = useCallback((error: unknown) => {
-    const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    console.error('Error in Telegram initialization:', error);
-    
-    toast({
-      title: 'Error',
-      description: errorMessage,
-      variant: 'destructive',
-    });
-  }, []);
+  const { setTelegramUser } = useCardStore();
 
   useEffect(() => {
-    const initTelegramUser = async () => {
-      if (typeof window === 'undefined') return;
-
+    const saveUserData = async (user: TelegramWebAppUser) => {
       try {
-        const tg = window.Telegram?.WebApp;
-        if (!tg) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('Running outside Telegram WebApp environment');
-            await handleMockUser();
-            return;
+        const response = await fetch('/api/telegram-user', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(user),
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to save user data');
+        }
+
+        const userData = await response.json();
+        setTelegramUser(userData);
+
+        toast({
+          title: 'Welcome!',
+          description: `Hello ${userData.firstName}!`,
+        });
+
+        return userData;
+      } catch (error) {
+        console.error('Error saving user:', error);
+        throw error;
+      }
+    };
+
+    const initTelegramUser = async () => {
+      try {
+        // Development mode handling
+        if (process.env.NODE_ENV === 'development') {
+          const mockUser = {
+            id: 1,
+            first_name: 'Dev',
+            username: 'dev_user',
+            is_premium: true,
+          };
+          await saveUserData(mockUser);
+          return;
+        }
+
+        // Production mode handling
+        if (typeof window !== 'undefined' && window.Telegram?.WebApp) {
+          const tg = window.Telegram.WebApp;
+          tg.ready();
+          tg.expand();
+
+          const user = tg.initDataUnsafe.user;
+          if (!user) {
+            throw new Error('No Telegram user data available');
           }
+
+          await saveUserData(user);
+        } else {
           throw new Error('Telegram WebApp is not available');
         }
-
-        tg.ready();
-        tg.expand();
-
-        const user = tg.initDataUnsafe.user;
-        if (!user) {
-          throw new Error('No user data available');
-        }
-
-        await saveUserData(user);
       } catch (error) {
-        handleError(error);
-      } finally {
-        setIsInitializing(false);
+        const message = error instanceof Error ? error.message : 'An unknown error occurred';
+        console.error('Telegram initialization error:', error);
+        
+        toast({
+          title: 'Error',
+          description: message,
+          variant: 'destructive',
+        });
       }
     };
 
     void initTelegramUser();
-  }, [handleMockUser, handleError]);
-
-  if (isInitializing) {
-    return null;
-  }
+  }, [setTelegramUser]);
 
   return null;
 }
