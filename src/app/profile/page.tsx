@@ -1,10 +1,10 @@
 'use client';
 
-import { useSignal, initData, type User } from '@telegram-apps/sdk-react';
+import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from 'react';
+import { useSignal, initData, type User } from '@telegram-apps/sdk-react';
 
 interface Stats {
   totalCardsProcessed: number;
@@ -12,7 +12,9 @@ interface Stats {
 }
 
 export default function ProfilePage() {
-  const initDataState = useSignal(initData.state);
+  const [initDataState, setInitDataState] = useState<{ user: User | null }>(
+    { user: null }
+  );
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -31,13 +33,16 @@ export default function ProfilePage() {
 
     // Check if the window object is available (browser environment)
     if (typeof window !== 'undefined') {
-      if (initDataState?.user) {
-        void fetchStats(initDataState.user.id.toString());
+      const initDataStateFromHook = useSignal(initData.state);
+      setInitDataState(initDataStateFromHook);
+
+      if (initDataStateFromHook?.user) {
+        void fetchStats(initDataStateFromHook.user.id.toString());
       } else {
         setLoading(false);
       }
     }
-  }, [initDataState]);
+  }, []);
 
   if (!initDataState?.user) {
     return (

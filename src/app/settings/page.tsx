@@ -45,20 +45,22 @@ export default function SettingsPage() {
   const [proxyInput, setProxyInput] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
-  const initDataState = useSignal(initData.state);
   const [proxyIp, setProxyIp] = useState<string>('');
 
   useEffect(() => {
     // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined' && initDataState?.user) {
+    if (typeof window !== 'undefined') {
+      const initDataState = useSignal(initData.state);
+
       // Set initial proxy value
-      if (proxy) {
+      if (initDataState?.user && proxy) {
         setProxyInput(proxy);
       }
     }
-  }, [proxy, initDataState]);
+  }, [proxy]);
 
   const checkAndSaveProxy = async () => {
+    const initDataState = useSignal(initData.state);
     const telegramId = initDataState?.user?.id?.toString();
 
     let effectiveTelegramId = telegramId;
@@ -109,6 +111,7 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
+    const initDataState = useSignal(initData.state);
     const telegramId = initDataState?.user?.id?.toString();
 
     if (!telegramId) {
