@@ -1,6 +1,7 @@
-import { NextConfig } from 'next';
+const { NextConfig } = require('next');
 
-const nextConfig: NextConfig = {
+/** @type {NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   webpack: (config, { isServer }) => {
     if (!isServer) {
@@ -26,4 +27,4 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+module.exports = nextConfig;
