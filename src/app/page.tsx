@@ -11,12 +11,8 @@ import '@/app/globals.css';
 import HomeView from '@/components/views/home-view';
 import ProfileView from '@/components/views/profile-view';
 import SettingsView from '@/components/views/settings-view';
-import dynamic from 'next/dynamic';
+import WebApp from '@twa-dev/sdk';
 import type { WebAppUser } from '@twa-dev/types';
-
-const WebApp = dynamic(() => import('@twa-dev/sdk'), { 
-  ssr: false 
-});
 
 export default function Page() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
@@ -25,7 +21,7 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && WebApp.initDataUnsafe.user) {
+    if (typeof window !== 'undefined' && WebApp?.initDataUnsafe?.user) {
       setUserData(WebApp.initDataUnsafe.user);
     }
   }, []);
