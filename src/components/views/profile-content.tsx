@@ -87,9 +87,48 @@ export function ProfileContent() {
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
       <main className="px-4 pt-4 pb-32">
         <Card className="p-6 max-w-2xl mx-auto">
-          {/* Rest of your profile content */}
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <Avatar className="w-16 h-16">
+                <AvatarImage src={user.photoUrl} alt={user.username} />
+                <AvatarFallback>
+                  {user.firstName[0]}
+                  {user.lastName?.[0]}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <h2 className="text-xl font-semibold">
+                  {user.firstName} {user.lastName}
+                </h2>
+                <p className="text-muted-foreground">
+                  @{user.username}
+                </p>
+                {user.isPremium && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                    Premium
+                  </span>
+                )}
+              </div>
+            </div>
+  
+            {stats && (
+              <>
+                <div className="p-4 rounded-lg bg-muted">
+                  <h3 className="font-semibold mb-2">Your Stats</h3>
+                  <p>Language: {user.languageCode}</p>
+                  <p>ID: {user.id}</p>
+                </div>
+  
+                <div className="p-4 rounded-lg bg-muted">
+                  <h3 className="font-semibold mb-2">Global Stats</h3>
+                  <p>Total Cards Processed: {stats.totalCardsProcessed}</p>
+                  <p>Total Users: {stats.totalUsers}</p>
+                </div>
+              </>
+            )}
+          </div>
         </Card>
       </main>
     </div>
   );
-} 
+}
