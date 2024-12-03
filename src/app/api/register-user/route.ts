@@ -6,9 +6,10 @@ export async function POST(req: Request) {
   try {
     const { telegramId, username, firstName, lastName, photoUrl, languageCode } = await req.json();
     
+    // First, upsert the user
     const user = await prisma.user.upsert({
       where: { 
-        telegramId // Changed from userId to telegramId to match schema
+        telegramId
       },
       update: {
         username,
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
         lastName,
         photoUrl,
         languageCode,
-        lastLoginAt: new Date(), // Changed from lastSeen to lastLoginAt to match schema
+        lastLoginAt: new Date(),
       },
       create: {
         telegramId,
@@ -34,8 +35,15 @@ export async function POST(req: Request) {
       },
     });
 
-    // Create default settings for new user if they don't exist
-    if (!user.settings) {
+    // Check if settings exist for this user
+    const existingSettings = await prisma.settings.findUnique({
+      where: {
+        userId: user.id
+      }
+    });
+
+    // Create settings if they don't exist
+    if (!existingSettings) {
       await prisma.settings.create({
         data: {
           userId: user.id,
@@ -48,7 +56,20 @@ export async function POST(req: Request) {
       });
     }
 
-    return NextResponse.json({ success: true, user });
+    // Fetch user with settings
+    const userWithSettings = await prisma.user.findUnique({
+      where: {
+        id: user.id
+      },
+      include: {
+        settings: true
+      }
+    });
+
+    return NextResponse.json({ 
+      success: true, 
+      user: userWithSettings 
+    });
   } catch (error) {
     console.error('Error registering user:', error);
     return NextResponse.json(
