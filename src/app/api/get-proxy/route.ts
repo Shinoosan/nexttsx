@@ -1,31 +1,42 @@
-// src/app/api/get-proxy/route.ts
+// src/app/api/save-proxy/route.ts
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET() {
+export async function POST(request: Request) {
   try {
-    // Fetch the most recently used active proxy
-    const proxyDoc = await prisma.proxy.findFirst({
-      where: {
-        isActive: true,
-      },
-      orderBy: {
-        lastUsed: 'desc', // Order by lastUsed field
-      },
-    });
+    const { proxy, userId } = await request.json();
 
-    if (!proxyDoc) {
+    if (!proxy || !userId) {
       return NextResponse.json(
-        { error: 'No active proxy found' },
-        { status: 404 }
+        { error: 'Missing required fields' },
+        { status: 400 }
       );
     }
 
-    return NextResponse.json({ proxy: proxyDoc.value });
+    const updatedProxy = await prisma.proxy.upsert({
+      where: {
+        userId_value: {
+          userId,
+          value: proxy,
+        },
+      },
+      update: {
+        isActive: true,
+        lastUsed: new Date(),
+      },
+      create: {
+        userId,
+        value: proxy,
+        isActive: true,
+        lastUsed: new Date(),
+      },
+    });
+
+    return NextResponse.json({ success: true, proxy: updatedProxy });
   } catch (error) {
-    console.error('Failed to fetch proxy:', error);
+    console.error('Failed to save proxy:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch proxy' },
+      { error: 'Failed to save proxy' },
       { status: 500 }
     );
   }
