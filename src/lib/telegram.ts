@@ -15,21 +15,9 @@ interface TelegramWebAppData {
   hash: string;
 }
 
-let isWebAppInitialized = false;
-
-// Initialize WebApp
-export const initTelegramApp = () => {
-  if (!isWebAppInitialized) {
-    WebApp.init();
-    isWebAppInitialized = true;
-  }
-  return WebApp;
-};
-
 // Get current user data from WebApp
 export const getCurrentUser = () => {
-  const webApp = initTelegramApp();
-  return webApp.initDataUnsafe?.user;
+  return WebApp.initDataUnsafe?.user;
 };
 
 // Validate Telegram WebApp data
@@ -49,7 +37,6 @@ export const validateTelegramWebAppData = (data: TelegramWebAppData): boolean =>
     const checkString = Object.entries(dataToCheck)
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([key, value]) => {
-        // Handle nested objects (like user object)
         if (typeof value === 'object') {
           return `${key}=${JSON.stringify(value)}`;
         }
@@ -57,19 +44,16 @@ export const validateTelegramWebAppData = (data: TelegramWebAppData): boolean =>
       })
       .join('\n');
 
-    // Create a secret key from the bot token
     const secretKey = crypto
       .createHash('sha256')
       .update(botToken)
       .digest();
 
-    // Calculate HMAC-SHA256 signature
     const signature = crypto
       .createHmac('sha256', secretKey)
       .update(checkString)
       .digest('hex');
 
-    // Compare the calculated signature with the provided hash
     return signature === hash;
   } catch (error) {
     console.error('Error validating Telegram data:', error);
@@ -126,42 +110,33 @@ export const sendMessage = async (chatId: number, message: string) => {
 
 // WebApp specific methods
 export const closeWebApp = () => {
-  const webApp = initTelegramApp();
-  webApp.close();
+  WebApp.close();
 };
 
 export const showAlert = (message: string) => {
-  const webApp = initTelegramApp();
-  webApp.showAlert(message);
+  WebApp.showAlert(message);
 };
 
 export const showConfirm = (message: string) => {
-  const webApp = initTelegramApp();
-  return webApp.showConfirm(message);
+  return WebApp.showConfirm(message);
 };
 
-// Additional helper methods
 export const expandWebApp = () => {
-  const webApp = initTelegramApp();
-  webApp.expand();
+  WebApp.expand();
 };
 
 export const setBackgroundColor = (color: string) => {
-  const webApp = initTelegramApp();
-  webApp.setBackgroundColor(color);
+  WebApp.setBackgroundColor(color);
 };
 
 export const setHeaderColor = (color: string) => {
-  const webApp = initTelegramApp();
-  webApp.setHeaderColor(color);
+  WebApp.setHeaderColor(color);
 };
 
 export const enableClosingConfirmation = () => {
-  const webApp = initTelegramApp();
-  webApp.enableClosingConfirmation();
+  WebApp.enableClosingConfirmation();
 };
 
 export const disableClosingConfirmation = () => {
-  const webApp = initTelegramApp();
-  webApp.disableClosingConfirmation();
+  WebApp.disableClosingConfirmation();
 };
