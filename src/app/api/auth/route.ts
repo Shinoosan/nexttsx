@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { validateTelegramWebAppData } from '@/lib/telegram';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
+import { PrismaClientKnownRequestError } from "@prisma/client/runtime/library";
 
 // Schema definitions
 const TelegramUserSchema = z.object({
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
     }
 
     // Validate Telegram data
-    const isValid = validateTelegramWebAppData(parsedInitData);
+    const isValid = await validateTelegramWebAppData(body.initData);
     if (!isValid) {
       return NextResponse.json(
         { error: 'Invalid authentication' },
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
       });
 
     } catch (error) {
-      if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error instanceof PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
           return NextResponse.json(
             { error: 'User already exists with different credentials' },
@@ -141,15 +141,47 @@ export async function GET(req: Request) {
       );
     }
 
+    // Extract token from Bearer header
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Validate token (implement your token validation logic)
+    const isValidToken = token && token.length > 0;
+    
+    if (!isValidToken) {
+      return NextResponse.json(
+        { error: 'Invalid token' },
+        { status: 401 }
+      );
+    }
+
     return NextResponse.json({
       authenticated: true,
+      message: 'Token is valid'
     });
 
   } catch (error) {
     console.error('Auth check error:', error);
     return NextResponse.json(
-      { error: 'Authentication failed' },
+      { 
+        error: 'Authentication failed',
+        message: process.env.NODE_ENV === 'development' 
+          ? error instanceof Error ? error.message : 'Unknown error'
+          : undefined
+      },
       { status: 401 }
     );
   }
+}
+
+// Helper function to handle errors consistently
+function handleError(error: unknown, defaultMessage: string) {
+  console.error(error);
+  const errorMessage = error instanceof Error ? error.message : defaultMessage;
+  return NextResponse.json(
+    { 
+      error: defaultMessage,
+      message: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+    },
+    { status: 500 }
+  );
 }
