@@ -24,14 +24,16 @@ interface TelegramUser {
 }
 
 // Create a wrapper component for Telegram SDK with proper error handling
+// Replace the TelegramWrapper component with this:
 const TelegramWrapper = dynamic(
   () => Promise.resolve(({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
     let initData = null;
     
     if (typeof window !== 'undefined') {
       try {
-        const WebApp = require('@twa-dev/sdk').default;
-        initData = WebApp.initData ? JSON.parse(atob(WebApp.initData)) : null;
+        // Use dynamic import instead of require
+        const WebApp = (window as any).Telegram?.WebApp || null;
+        initData = WebApp?.initData ? JSON.parse(atob(WebApp.initData)) : null;
       } catch (error) {
         console.error('Error initializing Telegram Web App:', error);
       }
@@ -41,7 +43,7 @@ const TelegramWrapper = dynamic(
   }),
   { 
     ssr: false,
-    loading: () => <ProfileSkeleton />
+    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
   }
 );
 

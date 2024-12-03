@@ -14,7 +14,7 @@ function NotFoundContent() {
           <AlertCircle className="h-12 w-12 text-destructive" />
           <h1 className="text-2xl font-bold">Page Not Found</h1>
           <p className="text-muted-foreground">
-            The page you're looking for doesn't exist or has been moved.
+            The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </p>
         </div>
 
@@ -31,7 +31,6 @@ function NotFoundContent() {
   );
 }
 
-// Export with dynamic to disable SSR
 export default dynamic(() => Promise.resolve(NotFoundContent), {
   ssr: false,
   loading: () => (
