@@ -12,6 +12,15 @@ export function WebAppWrapper({ children }: WebAppWrapperProps) {
   useEffect(() => {
     if (WebApp.isReady) {
       WebApp.ready();
+      
+      // Emit user data to parent component
+      if (WebApp.initDataUnsafe.user) {
+        window.dispatchEvent(
+          new CustomEvent('webappUserData', {
+            detail: WebApp.initDataUnsafe.user
+          })
+        );
+      }
     }
   }, []);
 

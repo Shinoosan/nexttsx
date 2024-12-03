@@ -26,6 +26,18 @@ export default function Page() {
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
 
+  useEffect(() => {
+    // Get userData from WebAppWrapper
+    const handleUserData = (data: WebAppUser) => {
+      setUserData(data);
+    };
+
+    window.addEventListener('webappUserData', handleUserData as any);
+    return () => {
+      window.removeEventListener('webappUserData', handleUserData as any);
+    };
+  }, []);
+
   const showToast = (message: string, type?: 'error' | 'success') => {
     toast({
       title: message,
@@ -47,13 +59,18 @@ export default function Page() {
                   showToast={showToast}
                 />
               )}
-              {currentView === 'profile' && (
+              {currentView === 'profile' && userData && (
                 <ProfileView
-                  telegramUserId={userData?.id.toString() || ''}
+                  telegramUserId={userData.id.toString()}
                   processedCount={processedCount}
+                  userData={userData}
                 />
               )}
-              {currentView === 'settings' && <SettingsView />}
+              {currentView === 'settings' && (
+                <SettingsView
+                  telegramUserId={userData?.id.toString() || ''}
+                />
+              )}
             </AnimatePresence>
           </main>
           <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
