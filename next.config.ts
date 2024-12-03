@@ -1,32 +1,41 @@
-import { NextConfig } from 'next';
+import type { NextConfig } from 'next';
+import type { Configuration as WebpackConfig } from 'webpack';
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  // Configure for client-side rendering
-  output: 'export',  // This enables static HTML export
-  images: {
-    unoptimized: true, // Required for static export
+  experimental: {
+    // Updated experimental options
+    isrMemoryCacheSize: 0,
+    serverActions: false,
+    appDir: true,
   },
-  webpack: (config, { isServer }) => {
+  // Force static rendering
+  output: 'export',
+  trailingSlash: true,
+  webpack: (config: WebpackConfig, { isServer }): WebpackConfig => {
+    // Client-side polyfills
     if (!isServer) {
-      config.resolve.fallback = {
-        ...config.resolve.fallback,
-        net: false,
-        tls: false,
-        fs: false,
-        http: false,
-        https: false,
+      config.resolve = {
+        ...config.resolve,
+        fallback: {
+          ...(config.resolve?.fallback || {}),
+          net: false,
+          tls: false,
+          fs: false,
+          http: false,
+          https: false,
+        },
       };
     }
 
-    config.externals = config.externals || {};
-    config.externals['abort-controller'] = 'abort-controller';
+    // External modules
+    config.externals = {
+      ...(config.externals as Record<string, string> || {}),
+      'abort-controller': 'abort-controller',
+    };
 
     return config;
-  },
-  experimental: {
-    serverComponentsExternalPackages: ['next/script']
   }
-} as const;
+};
 
 export default nextConfig;

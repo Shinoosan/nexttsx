@@ -1,17 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Disable server-side rendering
   experimental: {
-    serverComponentsExternalPackages: ['next/script'],
-    // Force all pages to be statically generated
+    // Updated experimental options
     isrMemoryCacheSize: 0,
-    // Disable server components
-    serverComponents: false
+    serverActions: false,
+    appDir: true,
   },
   // Force static rendering
+  output: 'export',
   trailingSlash: true,
   webpack: (config, { isServer }) => {
+    // Client-side polyfills
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
@@ -23,9 +23,11 @@ const nextConfig = {
       };
     }
 
-    // Add the abort-controller package as an external module
-    config.externals = config.externals || {};
-    config.externals['abort-controller'] = 'abort-controller';
+    // External modules
+    config.externals = {
+      ...(config.externals || {}),
+      'abort-controller': 'abort-controller',
+    };
 
     return config;
   }

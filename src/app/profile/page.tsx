@@ -5,6 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import dynamic from 'next/dynamic';
+import type { InitData } from '@telegram-apps/sdk-react';
 
 // Define interfaces
 interface Stats {
@@ -22,23 +23,19 @@ interface User {
   isPremium?: boolean;
 }
 
-interface InitDataState {
-  user?: User;
-}
-
 // Create a wrapper component for Telegram SDK
 const TelegramWrapper = dynamic(
   () => import('@telegram-apps/sdk-react').then((mod) => {
-    const TelegramComponent = ({ children }: { children: (data: InitDataState) => React.ReactNode }) => {
+    const TelegramComponent = ({ children }: { children: (data: InitData | null) => React.ReactNode }) => {
       const signal = mod.useSignal(mod.initData.state);
-      return <>{children(signal)}</>;
+      return <>{children(signal || null)}</>;
     };
     return TelegramComponent;
   }),
   { ssr: false }
 );
 
-function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
+function ProfileContent({ initData }: { initData: InitData | null }) {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -55,14 +52,14 @@ function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
       }
     };
 
-    if (initDataState?.user) {
-      void fetchStats(initDataState.user.id.toString());
+    if (initData?.user) {
+      void fetchStats(initData.user.id.toString());
     } else {
       setLoading(false);
     }
-  }, [initDataState]);
+  }, [initData]);
 
-  if (!initDataState?.user) {
+  if (!initData?.user) {
     return (
       <div className="p-4">
         <Card className="p-6">
@@ -81,7 +78,7 @@ function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
     return <ProfileSkeleton />;
   }
 
-  const user = initDataState.user;
+  const user = initData.user;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
@@ -90,20 +87,20 @@ function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-16 h-16">
-                <AvatarImage src={user.photoUrl} alt={user.username} />
+                <AvatarImage src={user.photo_url} alt={user.username} />
                 <AvatarFallback>
-                  {user.firstName[0]}
-                  {user.lastName?.[0]}
+                  {user.first_name[0]}
+                  {user.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
               <div>
                 <h2 className="text-xl font-semibold">
-                  {user.firstName} {user.lastName}
+                  {user.first_name} {user.last_name}
                 </h2>
                 <p className="text-muted-foreground">
                   @{user.username}
                 </p>
-                {user.isPremium && (
+                {user.is_premium && (
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
                     Premium
                   </span>
@@ -115,7 +112,7 @@ function ProfileContent({ initDataState }: { initDataState: InitDataState }) {
               <>
                 <div className="p-4 rounded-lg bg-muted">
                   <h3 className="font-semibold mb-2">Your Stats</h3>
-                  <p>Language: {user.languageCode}</p>
+                  <p>Language: {user.language_code}</p>
                   <p>ID: {user.id}</p>
                 </div>
 
@@ -156,7 +153,7 @@ function ProfileSkeleton() {
 export default function ProfilePage() {
   return (
     <TelegramWrapper>
-      {(initDataState) => <ProfileContent initDataState={initDataState} />}
+      {(initData) => <ProfileContent initData={initData} />}
     </TelegramWrapper>
   );
 }
