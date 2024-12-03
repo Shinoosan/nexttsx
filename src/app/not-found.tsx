@@ -4,9 +4,27 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ArrowLeft, AlertCircle } from "lucide-react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
 
-function NotFoundContent() {
+// Separate loading component for better organization
+const LoadingSpinner = () => (
+  <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+function NotFound() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Show loading spinner until component is mounted
+  if (!mounted) {
+    return <LoadingSpinner />;
+  }
+
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
       <Card className="w-[90%] max-w-md p-6 space-y-6">
@@ -31,11 +49,5 @@ function NotFoundContent() {
   );
 }
 
-export default dynamic(() => Promise.resolve(NotFoundContent), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[100dvh] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  ),
-});
+// Export the component directly without dynamic import
+export default NotFound;

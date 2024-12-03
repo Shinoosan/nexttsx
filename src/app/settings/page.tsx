@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ThemeToggle } from '@/components/theme-switcher';
 import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
-import { Home, Settings, User } from 'lucide-react';
-import Link from 'next/link';
-import dynamic from 'next/dynamic';
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 // Types
 interface ProxyCheckResponse {
@@ -17,31 +18,22 @@ interface ProxyCheckResponse {
   error?: string;
 }
 
-// Utility functions
-const checkProxy = async (proxy: string): Promise<ProxyCheckResponse> => {
-  try {
-    const response = await fetch('/api/check-proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proxy }),
-    });
+// Components
+const LoadingSpinner = () => (
+  <div className="min-h-[100dvh] flex items-center justify-center">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
 
-    if (!response.ok) {
-      throw new Error('Failed to check proxy');
-    }
+const ProxyStatus = ({ ip }: { ip: string }) => (
+  <Alert className="mt-4 bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900">
+    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+    <AlertDescription className="text-green-600 dark:text-green-400">
+      Proxy is active (IP: {ip})
+    </AlertDescription>
+  </Alert>
+);
 
-    const data: ProxyCheckResponse = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error checking proxy:', error);
-    return {
-      isLive: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred',
-    };
-  }
-};
-
-// Main component
 function SettingsContent() {
   const { proxy, updateUserProxy } = useProxy();
   const [proxyInput, setProxyInput] = useState(proxy || '');
@@ -50,38 +42,43 @@ function SettingsContent() {
   const [proxyIp, setProxyIp] = useState<string>('');
   const [telegramUserId, setTelegramUserId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initTelegram = async () => {
       try {
         if (typeof window !== 'undefined') {
-          const WebApp = (await import('@twa-dev/sdk')).default;
-          if (WebApp.initDataUnsafe?.user) {
+          const WebApp = (window as any).Telegram?.WebApp || (await import('@twa-dev/sdk')).default;
+          
+          if (WebApp?.initDataUnsafe?.user) {
             setTelegramUserId(WebApp.initDataUnsafe.user.id.toString());
           } else if (process.env.NODE_ENV === 'development') {
             setTelegramUserId('1'); // Development fallback
+          } else {
+            throw new Error('No user data available');
           }
         }
       } catch (error) {
         console.error('Error initializing Telegram Web App:', error);
-        toast({
-          title: 'Error',
-          description: 'Failed to initialize Telegram Web App',
-          variant: 'destructive',
-        });
+        setError(error instanceof Error ? error.message : 'Failed to initialize');
       } finally {
         setIsLoading(false);
       }
     };
 
     void initTelegram();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     if (proxy) {
       setProxyInput(proxy);
     }
   }, [proxy]);
+
+  const validateProxyFormat = (proxy: string): boolean => {
+    const proxyRegex = /^(?:\d{1,3}\.){3}\d{1,3}:\d+:[^:]+:[^:]+$/;
+    return proxyRegex.test(proxy);
+  };
 
   const checkAndSaveProxy = async () => {
     if (!telegramUserId) {
@@ -96,7 +93,7 @@ function SettingsContent() {
     if (!validateProxyFormat(proxyInput)) {
       toast({
         title: 'Error',
-        description: 'Invalid proxy format',
+        description: 'Invalid proxy format. Expected: ip:port:username:password',
         variant: 'destructive',
       });
       return;
@@ -104,21 +101,27 @@ function SettingsContent() {
 
     setIsChecking(true);
     try {
-      const proxyResult = await checkProxy(proxyInput);
+      const response = await fetch('/api/check-proxy', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ proxy: proxyInput }),
+      });
 
-      if (proxyResult.isLive) {
+      if (!response.ok) {
+        throw new Error('Failed to check proxy');
+      }
+
+      const data: ProxyCheckResponse = await response.json();
+
+      if (data.isLive) {
         await updateUserProxy(telegramUserId, proxyInput);
-        setProxyIp(proxyResult.ip || '');
+        setProxyIp(data.ip || '');
         toast({
           title: 'Success',
-          description: `Proxy is live (IP: ${proxyResult.ip})`,
+          description: `Proxy is live (IP: ${data.ip})`,
         });
       } else {
-        toast({
-          title: 'Error',
-          description: proxyResult.error || 'Proxy is not working',
-          variant: 'destructive',
-        });
+        throw new Error(data.error || 'Proxy is not working');
       }
     } catch (error) {
       toast({
@@ -158,16 +161,16 @@ function SettingsContent() {
     }
   };
 
-  const validateProxyFormat = (proxy: string): boolean => {
-    const parts = proxy.split(':');
-    return parts.length === 4;
-  };
-
   if (isLoading) {
+    return <LoadingSpinner />;
+  }
+
+  if (error) {
     return (
-      <div className="min-h-[100dvh] flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
+      <Alert variant="destructive" className="m-4">
+        <AlertCircle className="h-4 w-4" />
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
 
@@ -175,23 +178,61 @@ function SettingsContent() {
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
       <main className="px-4 pt-4 pb-32">
         <Card className="p-6 max-w-2xl mx-auto">
-          {/* Rest of your component JSX */}
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Settings</h2>
+              <ThemeToggle />
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="proxy">Proxy Settings</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Input
+                    id="proxy"
+                    placeholder="ip:port:username:password"
+                    value={proxyInput}
+                    onChange={(e) => setProxyInput(e.target.value)}
+                    className="flex-1"
+                  />
+                  <Button
+                    onClick={checkAndSaveProxy}
+                    disabled={isChecking || !proxyInput}
+                  >
+                    {isChecking ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : null}
+                    Check & Save
+                  </Button>
+                </div>
+                {proxyIp && <ProxyStatus ip={proxyIp} />}
+              </div>
+
+              <Button
+                variant="destructive"
+                onClick={handleClearProxy}
+                disabled={!proxyInput || isChecking}
+              >
+                Clear Proxy
+              </Button>
+            </div>
+          </div>
         </Card>
       </main>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
-        {/* Navigation JSX */}
-      </nav>
     </div>
   );
 }
 
-// Export with dynamic to disable SSR and handle client-side only features
-export default dynamic(() => Promise.resolve(SettingsContent), {
-  ssr: false,
-  loading: () => (
-    <div className="min-h-[100dvh] flex items-center justify-center">
-      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-    </div>
-  ),
-});
+export default function Settings() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <LoadingSpinner />;
+  }
+
+  return <SettingsContent />;
+}

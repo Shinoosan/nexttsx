@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
-import dynamic from 'next/dynamic';
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import type { WebAppInitData } from '@twa-dev/types';
 
-// Define interfaces
+// Types
 interface Stats {
   totalCardsProcessed: number;
   totalUsers: number;
@@ -23,93 +24,90 @@ interface TelegramUser {
   photo_url?: string;
 }
 
-// Create a wrapper component for Telegram SDK with proper error handling
-// Replace the TelegramWrapper component with this:
-const TelegramWrapper = dynamic(
-  () => Promise.resolve(({ children }: { children: (data: WebAppInitData | null) => React.ReactNode }) => {
-    let initData = null;
-    
-    if (typeof window !== 'undefined') {
-      try {
-        // Use dynamic import instead of require
-        const WebApp = (window as any).Telegram?.WebApp || null;
-        initData = WebApp?.initData ? JSON.parse(atob(WebApp.initData)) : null;
-      } catch (error) {
-        console.error('Error initializing Telegram Web App:', error);
-      }
-    }
-    
-    return <>{children(initData)}</>;
-  }),
-  { 
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
-  }
+// Components
+const ErrorAlert = ({ message }: { message: string }) => (
+  <Alert variant="destructive" className="mx-4 mt-4">
+    <AlertCircle className="h-4 w-4" />
+    <AlertTitle>Error</AlertTitle>
+    <AlertDescription>{message}</AlertDescription>
+  </Alert>
 );
 
-function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
+const StatsCard = ({ title, children }: { title: string; children: React.ReactNode }) => (
+  <div className="p-4 rounded-lg bg-muted">
+    <h3 className="font-semibold mb-2">{title}</h3>
+    {children}
+  </div>
+);
+
+const ProfileSkeleton = () => (
+  <div className="p-4">
+    <Card className="p-6">
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Skeleton className="w-16 h-16 rounded-full" />
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-24 w-full" />
+      </div>
+    </Card>
+  </div>
+);
+
+function ProfileContent() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [telegramUser, setTelegramUser] = useState<TelegramUser | null>(null);
 
   useEffect(() => {
-    const fetchStats = async (userId: string) => {
+    const initializeTelegramAndFetchStats = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/get-stats?userId=${userId}`);
-        if (!response.ok) {
-          throw new Error('Failed to fetch stats');
+        
+        // Initialize Telegram Web App
+        let user: TelegramUser | null = null;
+        
+        if (typeof window !== 'undefined') {
+          const WebApp = (window as any).Telegram?.WebApp || (await import('@twa-dev/sdk')).default;
+          
+          if (WebApp?.initDataUnsafe?.user) {
+            user = WebApp.initDataUnsafe.user;
+            setTelegramUser(user);
+            
+            // Fetch stats only if we have a user
+            const response = await fetch(`/api/get-stats?userId=${user.id}`);
+            if (!response.ok) {
+              throw new Error('Failed to fetch stats');
+            }
+            const data = await response.json();
+            setStats(data.global);
+          } else {
+            throw new Error('No user data available');
+          }
         }
-        const data = await response.json();
-        setStats(data.global);
       } catch (error) {
-        console.error('Error fetching stats:', error);
-        setError('Failed to load stats');
+        console.error('Error:', error);
+        setError(error instanceof Error ? error.message : 'An unknown error occurred');
       } finally {
         setLoading(false);
       }
     };
 
-    if (initData?.user) {
-      void fetchStats(initData.user.id.toString());
-    } else {
-      setLoading(false);
-    }
-  }, [initData]);
-
-  if (!initData?.user) {
-    return (
-      <div className="p-4">
-        <Card className="p-6">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">Error</h2>
-            <p className="text-muted-foreground">
-              Application was launched with missing init data
-            </p>
-          </div>
-        </Card>
-      </div>
-    );
-  }
+    void initializeTelegramAndFetchStats();
+  }, []);
 
   if (loading) {
     return <ProfileSkeleton />;
   }
 
-  if (error) {
-    return (
-      <div className="p-4">
-        <Card className="p-6">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold">Error</h2>
-            <p className="text-muted-foreground">{error}</p>
-          </div>
-        </Card>
-      </div>
-    );
+  if (error || !telegramUser) {
+    return <ErrorAlert message={error || 'No user data available'} />;
   }
-
-  const user = initData.user;
 
   return (
     <div className="min-h-[100dvh] bg-gradient-to-br from-white via-gray-50 to-gray-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-950">
@@ -118,43 +116,43 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
           <div className="space-y-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-16 h-16">
-                <AvatarImage src={user.photo_url} alt={user.username || user.first_name} />
+                <AvatarImage 
+                  src={telegramUser.photo_url} 
+                  alt={telegramUser.username || telegramUser.first_name} 
+                />
                 <AvatarFallback>
-                  {user.first_name[0]}
-                  {user.last_name?.[0]}
+                  {telegramUser.first_name[0]}
+                  {telegramUser.last_name?.[0]}
                 </AvatarFallback>
               </Avatar>
+              
               <div>
                 <h2 className="text-xl font-semibold">
-                  {user.first_name} {user.last_name}
+                  {telegramUser.first_name} {telegramUser.last_name}
                 </h2>
-                {user.username && (
+                {telegramUser.username && (
                   <p className="text-muted-foreground">
-                    @{user.username}
+                    @{telegramUser.username}
                   </p>
                 )}
-                {user.is_premium && (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                {telegramUser.is_premium && (
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">
                     Premium
                   </span>
                 )}
               </div>
             </div>
 
-            {stats && (
-              <>
-                <div className="p-4 rounded-lg bg-muted">
-                  <h3 className="font-semibold mb-2">Your Stats</h3>
-                  <p>Language: {user.language_code || 'Not specified'}</p>
-                  <p>ID: {user.id}</p>
-                </div>
+            <StatsCard title="Your Stats">
+              <p>Language: {telegramUser.language_code || 'Not specified'}</p>
+              <p>ID: {telegramUser.id}</p>
+            </StatsCard>
 
-                <div className="p-4 rounded-lg bg-muted">
-                  <h3 className="font-semibold mb-2">Global Stats</h3>
-                  <p>Total Cards Processed: {stats.totalCardsProcessed}</p>
-                  <p>Total Users: {stats.totalUsers}</p>
-                </div>
-              </>
+            {stats && (
+              <StatsCard title="Global Stats">
+                <p>Total Cards Processed: {stats.totalCardsProcessed}</p>
+                <p>Total Users: {stats.totalUsers}</p>
+              </StatsCard>
             )}
           </div>
         </Card>
@@ -163,31 +161,17 @@ function ProfileContent({ initData }: { initData: WebAppInitData | null }) {
   );
 }
 
-function ProfileSkeleton() {
-  return (
-    <div className="p-4">
-      <Card className="p-6">
-        <div className="space-y-6">
-          <div className="flex items-center gap-4">
-            <Skeleton className="w-16 h-16 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-6 w-32" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          </div>
-          <Skeleton className="h-24 w-full" />
-          <Skeleton className="h-24 w-full" />
-        </div>
-      </Card>
-    </div>
-  );
-}
+// Export the component with proper mounting checks
+export default function Profile() {
+  const [mounted, setMounted] = useState(false);
 
-// Export with dynamic to disable SSR
-export default dynamic(() => Promise.resolve(() => (
-  <TelegramWrapper>
-    {(initData) => <ProfileContent initData={initData} />}
-  </TelegramWrapper>
-)), {
-  ssr: false
-});
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <ProfileSkeleton />;
+  }
+
+  return <ProfileContent />;
+}

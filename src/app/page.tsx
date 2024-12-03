@@ -8,36 +8,36 @@ import { Toaster } from '@/components/ui/toaster';
 import { Home, Settings, User } from 'lucide-react';
 import { useProxy } from '@/hooks/use-proxy';
 import '@/app/globals.css';
-import dynamic from 'next/dynamic';
 
-// Dynamically import views with loading fallback
+// Loading component
+const LoadingScreen = () => (
+  <div className="flex items-center justify-center h-screen">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+  </div>
+);
+
+// Lazy load views with proper loading states
 const HomeView = dynamic(
-  () => import('@/components/views/home-view').then(mod => ({ 
-    default: mod.default 
-  })),
+  () => import('@/components/views/home-view'),
   {
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+    loading: () => <LoadingScreen />,
+    ssr: false
   }
 );
 
 const ProfileView = dynamic(
-  () => import('@/components/views/profile-view').then(mod => ({ 
-    default: mod.default 
-  })),
+  () => import('@/components/views/profile-view'),
   {
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+    loading: () => <LoadingScreen />,
+    ssr: false
   }
 );
 
 const SettingsView = dynamic(
-  () => import('@/components/views/settings-view').then(mod => ({ 
-    default: mod.default 
-  })),
+  () => import('@/components/views/settings-view'),
   {
-    ssr: false,
-    loading: () => <div className="flex items-center justify-center h-screen">Loading...</div>
+    loading: () => <LoadingScreen />,
+    ssr: false
   }
 );
 
@@ -52,30 +52,55 @@ interface WebAppUser {
   is_premium?: boolean;
 }
 
+interface TelegramWebApp {
+  initDataUnsafe: {
+    user?: WebAppUser;
+  };
+}
+
+declare global {
+  interface Window {
+    Telegram?: {
+      WebApp: TelegramWebApp;
+    };
+  }
+}
+
 function PageContent() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
   const [userData, setUserData] = useState<WebAppUser | null>(null);
   const [processedCount, setProcessedCount] = useState<number>(0);
   const { proxy } = useProxy();
-  const [isClient, setIsClient] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
-    setIsClient(true);
-    
+    setMounted(true);
+
     const initializeTelegramWebApp = async () => {
       try {
         if (typeof window !== 'undefined') {
-          const WebApp = (await import('@twa-dev/sdk')).default;
-          const initData = WebApp.initDataUnsafe;
-          if (initData && initData.user) {
-            setUserData(initData.user);
+          // Try to get WebApp from window.Telegram first
+          let WebApp = window.Telegram?.WebApp;
+          
+          // If not available, try importing from @twa-dev/sdk
+          if (!WebApp) {
+            const TWA = await import('@twa-dev/sdk');
+            WebApp = TWA.default;
+          }
+
+          if (WebApp?.initDataUnsafe?.user) {
+            setUserData(WebApp.initDataUnsafe.user);
           }
         }
       } catch (error) {
         console.error('Error initializing Telegram Web App:', error);
+        toast({
+          title: "Failed to initialize Telegram Web App",
+          variant: "destructive"
+        });
       } finally {
-        setIsLoading(false);
+        setIsInitialized(true);
       }
     };
 
@@ -89,8 +114,8 @@ function PageContent() {
     });
   };
 
-  if (!isClient || isLoading) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  if (!mounted || !isInitialized) {
+    return <LoadingScreen />;
   }
 
   return (
@@ -99,22 +124,46 @@ function PageContent() {
         <main className="pb-20 pt-4">
           <AnimatePresence mode="wait">
             {currentView === 'home' && (
-              <HomeView
-                telegramUserId={userData?.id?.toString() || ''}
-                proxy={proxy}
-                onProcessedCountChange={setProcessedCount}
-                showToast={showToast}
-              />
+              <motion.div
+                key="home"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <HomeView
+                  telegramUserId={userData?.id?.toString() || ''}
+                  proxy={proxy}
+                  onProcessedCountChange={setProcessedCount}
+                  showToast={showToast}
+                />
+              </motion.div>
             )}
             {currentView === 'profile' && (
-              <ProfileView
-                telegramUserId={userData?.id?.toString() || ''}
-                processedCount={processedCount}
-              />
+              <motion.div
+                key="profile"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <ProfileView
+                  telegramUserId={userData?.id?.toString() || ''}
+                  processedCount={processedCount}
+                />
+              </motion.div>
             )}
-            {currentView === 'settings' && <SettingsView />}
+            {currentView === 'settings' && (
+              <motion.div
+                key="settings"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <SettingsView />
+              </motion.div>
+            )}
           </AnimatePresence>
         </main>
+
         <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
           <div className="flex justify-around items-center h-16 max-w-md mx-auto">
             {['home', 'profile', 'settings'].map((view) => (
@@ -140,7 +189,17 @@ function PageContent() {
   );
 }
 
-// Export the page component with SSR disabled
-export default dynamic(() => Promise.resolve(PageContent), {
-  ssr: false
-});
+// Export the component with proper mounting checks
+export default function Page() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <LoadingScreen />;
+  }
+
+  return <PageContent />;
+}
