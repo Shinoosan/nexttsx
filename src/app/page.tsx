@@ -21,7 +21,7 @@ export default function Page() {
   const { proxy } = useProxy();
 
   useEffect(() => {
-    if (WebApp.initDataUnsafe.user) {
+    if (typeof window !== 'undefined' && WebApp.initDataUnsafe.user) {
       setUserData(WebApp.initDataUnsafe.user);
     }
   }, []);
