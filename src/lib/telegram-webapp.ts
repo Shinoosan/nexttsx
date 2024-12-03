@@ -1,18 +1,5 @@
-import type { WebAppUser } from '@twa-dev/types';
+import WebApp from '@twa-dev/sdk';
 
-interface WebAppType {
-  initDataUnsafe: {
-    user?: WebAppUser;
-  };
-}
+export default WebApp;
 
-let WebApp: WebAppType | null = null;
-
-if (typeof window !== 'undefined') {
-  // Using dynamic import instead of require
-  import('@twa-dev/sdk').then((module) => {
-    WebApp = module.default;
-  });
-}
-
-export default WebApp; 
+export type TelegramWebApp = typeof WebApp; 
