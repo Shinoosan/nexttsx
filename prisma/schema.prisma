@@ -8,24 +8,33 @@ generator client {
 }
 
 model User {
-  id              String    @id @default(auto()) @map("_id") @db.ObjectId
-  telegramId      String    @unique
-  firstName       String
-  lastName        String?
-  username        String?
-  languageCode    String
-  photoUrl        String?
-  isPremium       Boolean   @default(false)
-  isBot           Boolean   @default(false)
-  allowsWriteToPm Boolean   @default(false)
-  cardsProcessed  Int       @default(0)
-  liveCards       Int       @default(0)
-  deadCards       Int       @default(0)
-  lastLoginAt     DateTime  @default(now())
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  settings        Settings?
-  proxy           Proxy?    // Add this relation
+  id                    String    @id @default(auto()) @map("_id") @db.ObjectId
+  telegramId            String    @unique
+  username              String?
+  firstName             String
+  lastName              String?
+  photoUrl              String?
+  languageCode          String?   @default("en")
+  isPremium             Boolean   @default(false)
+  isBot                 Boolean   @default(false)
+  allowsWriteToPm       Boolean   @default(false)
+  
+  // Stats
+  cardsProcessed        Int       @default(0)
+  liveCards             Int       @default(0)
+  deadCards             Int       @default(0)
+  
+  // Settings
+  settings              Settings?
+  
+  // Timestamps
+  createdAt             DateTime  @default(now())
+  lastLoginAt           DateTime  @updatedAt
+  
+  // Relations
+  processedCards        ProcessedCard[]
+  proxy           Proxy?
+  @@map("users")
 }
 
 model Settings {
