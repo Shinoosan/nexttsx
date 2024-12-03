@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import dynamic from 'next/dynamic';
+import { useState, useEffect } from 'react';
+import dynamicImport from 'next/dynamic'; // Renamed from 'dynamic' to 'dynamicImport'
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from '@/components/ui/use-toast';
 import { ThemeToggle } from '@/components/theme-switcher';
@@ -17,7 +17,7 @@ const LoadingScreen = () => (
   </div>
 );
 
-const HomeView = dynamic(
+const HomeView = dynamicImport(
   () => import('@/components/views/home-view'),
   {
     loading: () => <LoadingScreen />,
@@ -25,7 +25,7 @@ const HomeView = dynamic(
   }
 );
 
-const ProfileView = dynamic(
+const ProfileView = dynamicImport(
   () => import('@/components/views/profile-view'),
   {
     loading: () => <LoadingScreen />,
@@ -33,13 +33,15 @@ const ProfileView = dynamic(
   }
 );
 
-const SettingsView = dynamic(
+const SettingsView = dynamicImport(
   () => import('@/components/views/settings-view'),
   {
     loading: () => <LoadingScreen />,
     ssr: false
   }
 );
+
+
 
 function PageContent() {
   const [currentView, setCurrentView] = useState<'home' | 'profile' | 'settings'>('home');
