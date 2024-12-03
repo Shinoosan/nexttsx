@@ -8,8 +8,7 @@ import { useProxy } from '@/hooks/use-proxy';
 import { useToast } from '@/components/ui/use-toast';
 import { Home, Settings, User } from 'lucide-react';
 import Link from 'next/link';
-import WebApp from '@twa-dev/sdk';
-import type { WebAppUser } from '@twa-dev/types';
+import { useSignal, initData } from '@telegram-apps/sdk-react';
 
 interface ProxyCheckResponse {
   isLive: boolean;
@@ -46,94 +45,22 @@ export default function SettingsPage() {
   const [proxyInput, setProxyInput] = useState('');
   const [isChecking, setIsChecking] = useState(false);
   const { toast } = useToast();
-  const [userData, setUserData] = useState<WebAppUser | null>(null);
+  const initDataState = useSignal(initData.state);
   const [proxyIp, setProxyIp] = useState<string>('');
 
   useEffect(() => {
     // Check if the window object is available (browser environment)
-    if (typeof window !== 'undefined' && WebApp.initDataUnsafe.user) {
-      setUserData(WebApp.initDataUnsafe.user);
-    }
-    
-    // Set initial proxy value
-    if (proxy) {
-      setProxyInput(proxy);
-    }
-  }, [proxy]);
-
-  const checkAndSaveProxy = async () => {
-    if (!userData?.id) {
-      if (process.env.NODE_ENV === 'development') {
-        setUserData({ id: 1 } as WebAppUser);
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Telegram user ID not found',
-          variant: 'destructive',
-        });
-        return;
+    if (typeof window !== 'undefined' && initDataState?.user) {
+      // Set initial proxy value
+      if (proxy) {
+        setProxyInput(proxy);
       }
     }
-
-    setIsChecking(true);
-    try {
-      const proxyResult = await checkProxy(proxyInput);
-
-      if (proxyResult.isLive) {
-        // Save proxy to database
-        await updateUserProxy(userData?.id.toString() || '1', proxyInput);
-        setProxyIp(proxyResult.ip || '');
-        
-        toast({
-          title: 'Success',
-          description: `Proxy is live (IP: ${proxyResult.ip})`,
-        });
-      } else {
-        toast({
-          title: 'Error',
-          description: proxyResult.error || 'Proxy is not working',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to save proxy',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsChecking(false);
-    }
-  };
-
-  const handleClearProxy = async () => {
-    if (!userData?.id && process.env.NODE_ENV !== 'development') {
-      toast({
-        title: 'Error',
-        description: 'Telegram user ID not found',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    try {
-      await updateUserProxy(userData?.id.toString() || '1', '');
-      setProxyInput('');
-      setProxyIp('');
-      toast({
-        title: 'Success',
-        description: 'Proxy has been cleared',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to clear proxy',
-        variant: 'destructive',
-      });
-    }
-  };
+  }, [proxy, initDataState]);
 
   const checkAndSaveProxy = async () => {
+    const telegramId = initDataState?.user?.id?.toString();
+
     // If no telegram ID and in development, use a default
     if (!telegramId) {
       if (process.env.NODE_ENV === 'development') {
@@ -180,6 +107,8 @@ export default function SettingsPage() {
   };
 
   const handleClearProxy = async () => {
+    const telegramId = initDataState?.user?.id?.toString();
+
     if (!telegramId) {
       toast({
         title: 'Error',
@@ -271,7 +200,7 @@ export default function SettingsPage() {
         </Card>
       </main>
 
-     <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
+      <nav className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-lg border-t">
         <div className="flex justify-between items-center h-16 px-4 max-w-2xl mx-auto">
           <Link
             href="/"
